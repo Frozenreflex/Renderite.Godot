@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using Godot.Collections;
 using Renderite.Shared;
@@ -6,18 +7,38 @@ namespace Renderite.Godot.Source;
 
 public class AssetManager
 {
-    public Dictionary<int, Rid> Meshes = new();
-    public Dictionary<int, Rid> Shaders = new();
-    public Dictionary<int, Rid> Texture2Ds = new();
-    public Dictionary<int, Rid> Texture3Ds = new();
-    public Dictionary<int, Rid> Cubemaps = new();
-    public Dictionary<int, Rid> RenderTextures = new();
-    public Dictionary<int, Rid> Materials = new();
+    public class AssetContainer
+    {
+        public Dictionary<int, Rid> Dictionary = new();
+        private Func<Rid> _createFunc;
 
+        public AssetContainer(Func<Rid> create)
+        {
+            _createFunc = create;
+        }
+        public Rid Get(int index)
+        {
+            if (Dictionary.TryGetValue(index, out var result)) return result;
+            result = _createFunc();
+            Dictionary[index] = result;
+            return result;
+        }
+        public void Unload(int index)
+        {
+            if (Dictionary.TryGetValue(index, out var rid)) RenderingServer.FreeRid(rid);
+        }
+    }
+    public MaterialManager MaterialManager = new();
+    public AssetContainer Meshes = new(RenderingServer.MeshCreate);
+    //public AssetContainer Texture2Ds = new();
+    //public AssetContainer Texture3Ds = new();
+    //public AssetContainer Cubemaps = new();
+    //public AssetContainer RenderTextures = new();
     private void HandleRenderCommand(RendererCommand command)
     {
         switch (command)
         {
+            //TODO: does frooxengine properly ensure that referenced objects are unreferenced before sending unload commands, or do we need to do so ourselves?
             case RendererShutdown:
             {
                 Main.Instance.GetTree().Quit(); //todo: do we need to do more than this?
@@ -26,18 +47,29 @@ public class AssetManager
             case MeshUploadData meshUploadData:
             {
                 var index = meshUploadData.assetId;
-                if (Meshes.TryGetValue(index, out var rid)) RenderingServer.MeshClear(rid);
-                else rid = RenderingServer.MeshCreate();
+                var rid = Meshes.Get(index);
+                RenderingServer.MeshClear(rid);
+                
                 //TODO convert meshes
                 //resonite meshes can have up to 8 UV channels while godot only natively supports 2
                 //however, godot also supports up to 4 custom data channels, where each channel can be one of (4 byte colors, 2 or 4 half precision floats, or between 1-4 floats),
                 //so we can use 3 of the custom channels for UVs if we need to, it might be good to check what range of channels reso's shaders use
+                
                 break;
             }
             case MeshUnload meshUnload:
             {
-                var index = meshUnload.assetId;
-                if (Meshes.TryGetValue(index, out var rid)) RenderingServer.FreeRid(rid);
+                Meshes.Unload(meshUnload.assetId);
+                break;
+            }
+            case ShaderUpload shaderUpload:
+            {
+                MaterialManager.Handle(shaderUpload);
+                break;
+            }
+            case ShaderUnload shaderUnload:
+            {
+                MaterialManager.Handle(shaderUnload);
                 break;
             }
         }
