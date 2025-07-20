@@ -34,7 +34,7 @@ public class AssetManager
     //public AssetContainer Texture3Ds = new();
     //public AssetContainer Cubemaps = new();
     //public AssetContainer RenderTextures = new();
-    private void HandleRenderCommand(RendererCommand command)
+    public void HandleRenderCommand(RendererCommand command)
     {
         switch (command)
         {
