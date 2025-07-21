@@ -25,10 +25,17 @@ public static class TransformHelpers
     {
         // TODO: formula for converting a transform is taken from here https://github.com/V-Sekai/unidot_importer/blob/main/object_adapter.gd#L503
         // i'm assuming this works, but we need to test it
+        return (FlipXInverse * transform.ToGodotLiteral()) * Transform3D.FlipX;
+    }
+    /// <summary>
+    /// Converts a RenderTransform to a Godot Transform3D, not accounting for the flipped X axis
+    /// </summary>
+    public static Transform3D ToGodotLiteral(this RenderTransform transform)
+    {
         var pos = transform.position.ToGodotLiteral();
         var rot = transform.rotation.ToGodotLiteral();
         var scale = transform.scale.ToGodotLiteral();
-        return (FlipXInverse * TransformFromTRS(pos, rot, scale)) * Transform3D.FlipX;
+        return TransformFromTRS(pos, rot, scale);
     }
     /// <summary>
     /// Converts a RenderVector3 to a Godot Vector3, without accounting for the flipped X axis

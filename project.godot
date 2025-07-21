@@ -17,3 +17,8 @@ config/icon="res://icon.svg"
 [dotnet]
 
 project/assembly_name="Renderite.Godot"
+
+[layer_names]
+
+3d_render/layer_1="Default"
+3d_render/layer_2="Private"
