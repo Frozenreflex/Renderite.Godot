@@ -55,4 +55,11 @@ public static class TransformHelpers
     /// Converts a RenderQuaternion to a Godot Quaternion, accounting for the flipped X axis
     /// </summary>
     public static Quaternion ToGodot(this RenderQuaternion quaternion) => new(quaternion.x, -quaternion.y, -quaternion.z, quaternion.w);
+    public static Aabb ToGodot(this RenderBoundingBox boundingBox)
+    {
+        var center = boundingBox.center.ToGodot();
+        var size = boundingBox.extents.ToGodotLiteral();
+        var topCorner = center - (size * 0.5f);
+        return new Aabb(topCorner, size);
+    }
 }
