@@ -18,8 +18,9 @@ public partial class RenderSpace : Node3D
     public Quaternion RootRotation;
     public Vector3 RootScale;
     public readonly List<TransformNode> Nodes = new();
-    public readonly List<AssetSceneInstanceManager> Meshes = new();
+    public readonly List<MeshInstanceManager> Meshes = new();
     public readonly List<SkinnedMeshInstanceManager> SkinnedMeshes = new();
+    public readonly List<LightInstanceManager> Lights = new();
     private bool _lastPrivate;
     private bool _lastActive;
     private Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
@@ -60,6 +61,8 @@ public partial class RenderSpace : Node3D
 
         if (data.transformsUpdate is not null) HandleTransformUpdate(data.transformsUpdate);
         if (data.meshRenderersUpdate is not null) HandleMeshRenderablesUpdate(data.meshRenderersUpdate);
+        if (data.skinnedMeshRenderersUpdate is not null) HandleSkinnedMeshRenderablesUpdate(data.skinnedMeshRenderersUpdate);
+        if (data.lightsUpdate is not null) HandleLightsUpdate(data.lightsUpdate);
     }
     public void HandleTransformUpdate(TransformsUpdate update)
     {
@@ -101,6 +104,68 @@ public partial class RenderSpace : Node3D
                 if (poseUpdate.transformId < 0) break;
                 var node = Nodes[poseUpdate.transformId];
                 node.Transform = poseUpdate.pose.ToGodot();
+            }
+        }
+    }
+    public void HandleLightsUpdate(LightRenderablesUpdate update)
+    {
+        HandleSceneInstanceAdditionRemoval(Lights, update);
+        if (update.states.IsEmpty) return;
+        var states = SharedMemoryManager.Instance.Read(update.states);
+        foreach (var state in states)
+        {
+            if (state.renderableIndex < 0) break;
+            var light = Lights[state.renderableIndex];
+            var type = state.type.ToGodot();
+            if (light.Type != type)
+            {
+                light.Type = type;
+                var newRid = type switch
+                {
+                    RenderingServer.LightType.Directional => RenderingServer.DirectionalLightCreate(),
+                    RenderingServer.LightType.Spot => RenderingServer.SpotLightCreate(),
+                    _ => RenderingServer.OmniLightCreate(),
+                };
+                RenderingServer.InstanceSetBase(light.InstanceRid, newRid);
+                if (light.LightRid != new Rid()) RenderingServer.FreeRid(light.LightRid);
+                light.LightRid = newRid;
+            }
+            var lightRid = light.LightRid;
+            //TODO: check for accuracy, some light settings don't exist in godot
+            RenderingServer.LightSetColor(lightRid, state.color.ToGodotColor());
+            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Energy, state.intensity);
+            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Range, state.range);
+            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.ShadowBias, state.shadowBias);
+            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.ShadowNormalBias, state.shadowNormalBias);
+            RenderingServer.LightSetShadow(lightRid, state.shadowType != ShadowType.None); //hard and soft aren't distinguished between here
+            //constants copied from here https://github.com/V-Sekai/unidot_importer/blob/main/object_adapter.gd#L5869
+            //TODO: light cookies for lights other than spot, how do they work?
+            switch (type)
+            {
+                case RenderingServer.LightType.Directional:
+                {
+                    break;
+                }
+                case RenderingServer.LightType.Omni:
+                {
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 1f);
+                    break;
+                }
+                case RenderingServer.LightType.Spot:
+                {
+                    //TODO
+                    /*
+                    if (light.AssetIndex != state.cookieTextureAssetId)
+                    {
+                        light.AssetIndex = state.cookieTextureAssetId;
+                        RenderingServer.LightSetProjector(lightRid, cookieRid);
+                    }
+                    */
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 0.5f);
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAttenuation, 0.333333333f);
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAngle, state.spotAngle * 0.5f);
+                    break;
+                }
             }
         }
     }
@@ -149,7 +214,7 @@ public partial class RenderSpace : Node3D
         HandleSceneInstanceAdditionRemoval(Meshes, update);
         HandleMeshRenderablesUpdateBase(update, Meshes);
     }
-    private void HandleMeshRenderablesUpdateBase<T>(MeshRenderablesUpdate update, List<T> list) where T : AssetSceneInstanceManager
+    private void HandleMeshRenderablesUpdateBase<T>(MeshRenderablesUpdate update, List<T> list) where T : MeshInstanceManager
     {
         if (!update.meshStates.IsEmpty)
         {

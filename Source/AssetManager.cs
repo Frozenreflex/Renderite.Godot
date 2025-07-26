@@ -1,7 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Godot;
-using Godot.Collections;
+using Renderite.Godot.Source.Helpers;
+using Renderite.Godot.Source.SharedMemory;
 using Renderite.Shared;
+using Array = Godot.Collections.Array;
 
 namespace Renderite.Godot.Source;
 
@@ -9,7 +14,7 @@ public class AssetManager
 {
     public class AssetContainer
     {
-        public Dictionary<int, Rid> Dictionary = new();
+        public global::Godot.Collections.Dictionary<int, Rid> Dictionary = new();
         private Func<Rid> _createFunc;
 
         public AssetContainer(Func<Rid> create)
@@ -34,6 +39,7 @@ public class AssetManager
     //public AssetContainer Texture3Ds = new();
     //public AssetContainer Cubemaps = new();
     //public AssetContainer RenderTextures = new();
+    
     public void HandleRenderCommand(RendererCommand command)
     {
         switch (command)
@@ -49,6 +55,10 @@ public class AssetManager
                 var index = meshUploadData.assetId;
                 var rid = Meshes.Get(index);
                 RenderingServer.MeshClear(rid);
+
+                var meshData = MeshConverter.Convert(meshUploadData);
+                foreach (var mesh in meshData)
+                    RenderingServer.MeshAddSurfaceFromArrays(rid, RenderingServer.PrimitiveType.Triangles, mesh.arrays, mesh.blendShapes, null, (RenderingServer.ArrayFormat)mesh.flags);
                 
                 //TODO convert meshes
                 //resonite meshes can have up to 8 UV channels while godot only natively supports 2

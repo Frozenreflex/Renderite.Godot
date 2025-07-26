@@ -21,13 +21,15 @@ public class SceneInstanceManager
         if (listenToTransformChanges)
         {
             Base.GlobalTransformChanged += BaseOnGlobalTransformChanged;
+            UpdateTransform();
             _listening = true;
         }
         InstanceRid = RenderingServer.InstanceCreate();
         RenderingServer.InstanceSetScenario(InstanceRid, Main.Scenario);
         Initialized = true;
     }
-    private void BaseOnGlobalTransformChanged(TransformNode obj) => RenderingServer.InstanceSetTransform(InstanceRid, obj.GlobalTransform);
+    private void UpdateTransform() => RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
+    private void BaseOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
 
     public void Cleanup()
     {

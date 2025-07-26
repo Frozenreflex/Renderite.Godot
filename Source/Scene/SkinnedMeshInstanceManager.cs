@@ -2,7 +2,7 @@ using Godot;
 
 namespace Renderite.Godot.Source.Scene;
 
-public class SkinnedMeshInstanceManager : AssetSceneInstanceManager
+public class SkinnedMeshInstanceManager : MeshInstanceManager
 {
     public class Bone
     {
