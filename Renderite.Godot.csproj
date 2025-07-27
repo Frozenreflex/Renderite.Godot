@@ -3,6 +3,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>preview</LangVersion>
         <RenderitePath>$(MSBuildThisFileDirectory)Renderite/</RenderitePath>
         <RenderitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\</RenderitePath>
         <RenderitePath Condition="Exists('/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/')">/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/</RenderitePath>

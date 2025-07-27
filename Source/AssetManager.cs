@@ -31,11 +31,12 @@ public class AssetManager
         public void Unload(int index)
         {
             if (Dictionary.TryGetValue(index, out var rid)) RenderingServer.FreeRid(rid);
+            Dictionary.Remove(index);
         }
     }
 
     public MaterialManager MaterialManager = new();
-    public AssetContainer Meshes = new(RenderingServer.MeshCreate);
+    public Dictionary<int, MeshAsset> Meshes = new();
     //public AssetContainer Texture2Ds = new();
     //public AssetContainer Texture3Ds = new();
     //public AssetContainer Cubemaps = new();
@@ -54,23 +55,20 @@ public class AssetManager
             case MeshUploadData meshUploadData:
             {
                 var index = meshUploadData.assetId;
-                var rid = Meshes.Get(index);
-                RenderingServer.MeshClear(rid);
-
-                var meshData = MeshConverter.Convert(meshUploadData);
-                foreach (var mesh in meshData)
-                    RenderingServer.MeshAddSurfaceFromArrays(rid, RenderingServer.PrimitiveType.Triangles, mesh.arrays, mesh.blendShapes, null, (RenderingServer.ArrayFormat)mesh.flags);
-
-                //TODO convert meshes
-                //resonite meshes can have up to 8 UV channels while godot only natively supports 2
-                //however, godot also supports up to 4 custom data channels, where each channel can be one of (4 byte colors, 2 or 4 half precision floats, or between 1-4 floats),
-                //so we can use 3 of the custom channels for UVs if we need to, it might be good to check what range of channels reso's shaders use
+                if (!Meshes.TryGetValue(index, out var mesh))
+                {
+                    mesh = MeshAsset.Create();
+                    Meshes[index] = mesh;
+                }
+                mesh.Upload(meshUploadData);
 
                 break;
             }
             case MeshUnload meshUnload:
             {
-                Meshes.Unload(meshUnload.assetId);
+                var index = meshUnload.assetId;
+                if (Meshes.TryGetValue(index, out var mesh)) mesh.Cleanup();
+                Meshes.Remove(index);
                 break;
             }
             case ShaderUpload shaderUpload:

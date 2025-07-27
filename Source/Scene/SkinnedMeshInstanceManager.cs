@@ -22,7 +22,20 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
             }
             else RenderingServer.SkeletonBoneSetTransform(Manager.InstanceRid, BoneIndex, Transform3D.Identity);
         }
-        private void UpdateTransform() => RenderingServer.SkeletonBoneSetTransform(Manager.InstanceRid, BoneIndex, Node.GlobalTransform);
+        public void UpdateTransform()
+        {
+            if (Manager.Mesh.AssetID == NullRid) return;
+            
+            if (Node is null)
+                RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Transform3D.Identity);
+            else
+            {
+                var skin = Manager.Mesh.Skin;
+                var skinValue = BoneIndex >= 0 && BoneIndex < skin.Length ? skin[BoneIndex] : Transform3D.Identity;
+                RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Node.GlobalTransform * skinValue);
+            }
+        }
+        public void ResetTransform() => RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Transform3D.Identity);
         private void NodeOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
         public void Cleanup()
         {
@@ -33,5 +46,39 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         }
     }
 
+    protected override bool TrackMeshAssetChanges => true;
+
+    private void UpdateAllTransforms()
+    {
+        if (InstanceRid != NullRid && Mesh.AssetID != NullRid)
+            foreach (var bone in TrackedBones)
+                bone?.ResetTransform();
+        else
+            foreach (var bone in TrackedBones)
+                bone?.UpdateTransform();
+    }
+
+    protected override void OnMeshAssetChanged() => UpdateAllTransforms();
+    protected override void OnMeshChanged()
+    {
+        if (Mesh.AssetID != NullRid) RenderingServer.InstanceAttachSkeleton(InstanceRid, SkeletonRid); //TODO is this needed
+        UpdateAllTransforms();
+    }
+
     public Bone[] TrackedBones = [];
+
+    public Rid SkeletonRid;
+
+    protected override void OnInitialize()
+    {
+        base.OnInitialize();
+        SkeletonRid = RenderingServer.SkeletonCreate();
+        RenderingServer.InstanceAttachSkeleton(InstanceRid, SkeletonRid);
+    }
+
+    public override void Cleanup()
+    {
+        base.Cleanup();
+        RenderingServer.FreeRid(SkeletonRid);
+    }
 }

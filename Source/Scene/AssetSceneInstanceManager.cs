@@ -4,5 +4,6 @@ namespace Renderite.Godot.Source.Scene;
 
 public class AssetSceneInstanceManager : SceneInstanceManager
 {
+    public static readonly Rid NullRid = new Rid();
     public int AssetIndex = -1;
 }

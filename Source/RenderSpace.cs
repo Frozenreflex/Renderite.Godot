@@ -243,7 +243,7 @@ public partial class RenderSpace : Node3D
                 var assetId = meshState.meshAssetId;
                 if (mesh.AssetIndex != assetId)
                 {
-                    RenderingServer.InstanceSetBase(mesh.InstanceRid, assetId < 0 ? new Rid() : RendererManager.Instance.AssetManager.Meshes.Get(assetId));
+                    mesh.Mesh = RendererManager.Instance.AssetManager.Meshes[assetId];
                     mesh.AssetIndex = assetId;
                 }
                 var shadowMode = meshState.shadowCastMode.ToGodot();

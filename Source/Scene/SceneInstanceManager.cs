@@ -25,12 +25,17 @@ public class SceneInstanceManager
             UpdateTransform();
             _listening = true;
         }
+        OnInitialize();
         Initialized = true;
+    }
+    protected virtual void OnInitialize()
+    {
+        
     }
     private void UpdateTransform() => RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
     private void BaseOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
 
-    public void Cleanup()
+    public virtual void Cleanup()
     {
         if (_listening)
         {

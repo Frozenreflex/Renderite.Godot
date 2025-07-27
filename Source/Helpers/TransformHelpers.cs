@@ -63,4 +63,17 @@ public static class TransformHelpers
         var topCorner = center - (size * 0.5f);
         return new Aabb(topCorner, size);
     }
+    /// <summary>
+    /// Converts a RenderMatrix4x4 to a Godot Transform3D, accounting for the flipped X axis
+    /// </summary>
+    public static Transform3D ToGodot(this RenderMatrix4x4 matrix)
+    {
+        //also taken from https://github.com/V-Sekai/unidot_importer/blob/main/object_adapter.gd#L503
+        var baseTransform = new Transform3D(
+            new Vector3(matrix.m00, matrix.m10, matrix.m20), 
+            new Vector3(matrix.m01, matrix.m11, matrix.m21), 
+            new Vector3(matrix.m02, matrix.m12, matrix.m22), 
+            new Vector3(matrix.m03, matrix.m13, matrix.m23));
+        return (FlipXInverse * baseTransform) * Transform3D.FlipX;
+    }
 }
