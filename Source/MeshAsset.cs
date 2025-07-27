@@ -31,6 +31,7 @@ public class MeshAsset
         var meshBuffer = new MeshBuffer(meshUploadData);
         if (!meshUploadData.buffer.IsEmpty)
             meshBuffer.Data = SharedMemoryAccessor.Instance.AccessSlice(meshUploadData.buffer);
+        
 
         var vertexMem = new MemoryStream(meshBuffer.GetRawVertexBufferData().ToArray());
         var vertReader = new BinaryReader(vertexMem);
@@ -338,8 +339,12 @@ public class MeshAsset
             for (var index = 0; index < buffer.Length; index++) indexBuffer[index] = (int)buffer[index];
         }
 
-        var indexList = meshBuffer.Submeshes.Select(submesh => indexBuffer[submesh.indexStart..submesh.indexCount].ToArray()).ToList();
-        var typeList = meshBuffer.Submeshes.Select(i => i.topology.ToGodot()).ToArray();
+        var indexList = meshBuffer.Submeshes is not null ? 
+            meshBuffer.Submeshes.Select(submesh => indexBuffer[submesh.indexStart..submesh.indexCount].ToArray()).ToList() :
+            [new[] { 0, 0, 0 }];
+        var typeList = meshBuffer.Submeshes is not null ? 
+            meshBuffer.Submeshes.Select(i => i.topology.ToGodot()).ToArray() :
+            [ RenderingServer.PrimitiveType.Triangles ];
 
         var baseArray = new Array();
         baseArray.Resize((int)Mesh.ArrayType.Max);
