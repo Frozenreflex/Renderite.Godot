@@ -48,171 +48,252 @@ public static class MeshConverter
         var uv5List = new List<Vector2>(usesUV5 ? vertCount : 0);
         var uv6List = new List<Vector2>(usesUV6 ? vertCount : 0);
         var uv7List = new List<Vector2>(usesUV7 ? vertCount : 0);
+        List<Vector2>[] uvLists = [uv0List, uv1List, uv2List, uv3List, uv4List, uv5List, uv6List, uv7List];
+        
         var weightList = new List<float>(usesBoneWeights ? vertCount * 8 : 0);
-        var indexList = new List<int>(usesBoneIndices ? vertCount * 8 : 0);
+        var boneIndexList = new List<int>(usesBoneIndices ? vertCount * 8 : 0);
 
-        for (var i = 0; i < vertCount; i++)
+        var use8Bones = false;
+
+        var vertexActions = new List<Action>();
+
+        foreach (var attribute in meshUploadData.vertexAttributes)
         {
-            foreach (var layout in meshUploadData.vertexAttributes)
+            var type = attribute.attribute;
+            var format = attribute.format;
+            var size = attribute.Size;
+            var dimension = attribute.dimensions;
+            var used = 0;
+            switch (type)
             {
-                switch (layout.attribute)
+                case VertexAttributeType.Position:
                 {
-                    case VertexAttributeType.Position:
-                        ReadVector3(positionList);
-                        break;
-                    case VertexAttributeType.Normal:
-                        ReadVector3(normalList);
-                        break;
-                    case VertexAttributeType.Tangent:
-                        ReadVector4(tangentList);
-                        break;
-                    case VertexAttributeType.Color:
-                        ReadColor(colorList);
-                        break;
-                    case VertexAttributeType.UV0:
-                        ReadUV(uv0List);
-                        break;
-                    case VertexAttributeType.UV1:
-                        ReadUV(uv1List);
-                        break;
-                    case VertexAttributeType.UV2:
-                        ReadUV(uv2List);
-                        break;
-                    case VertexAttributeType.UV3:
-                        ReadUV(uv3List);
-                        break;
-                    case VertexAttributeType.UV4:
-                        ReadUV(uv4List);
-                        break;
-                    case VertexAttributeType.UV5:
-                        ReadUV(uv5List);
-                        break;
-                    case VertexAttributeType.UV6:
-                        ReadUV(uv6List);
-                        break;
-                    case VertexAttributeType.UV7:
-                        ReadUV(uv7List);
-                        break;
-                    case VertexAttributeType.BoneWeights:
-
-                        break;
-                    case VertexAttributeType.BoneIndicies:
-                        break;
+                    if (format is VertexAttributeFormat.Float32)
+                    {
+                        vertexActions.Add(() => positionList.Add(new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle())));
+                        used = sizeof(float) * 3;
+                    }
+                    else if (format is VertexAttributeFormat.Half16)
+                    {
+                        vertexActions.Add(() => positionList.Add(new Vector3((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf())));
+                        used = 2 * 3; //sizeof(Half) * 3
+                    }
+                    else vertexActions.Add(() => positionList.Add(Vector3.Zero));
+                    break;
                 }
-
-                continue;
-
-                void ReadBoneInfo<T>(List<T> list, Action<T> read)
+                case VertexAttributeType.Normal:
                 {
+                    //frooxengine supposedly supports 2d normals but thats a big fat TODO
+                    if (dimension is 3)
+                    {
+                        if (format is VertexAttributeFormat.Float32)
+                        {
+                            vertexActions.Add(() => normalList.Add(new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle())));
+                            used = sizeof(float) * 3;
+                        }
+                        else if (format is VertexAttributeFormat.Half16)
+                        {
+                            vertexActions.Add(() => normalList.Add(new Vector3((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf())));
+                            used = 2 * 3; //sizeof(Half) * 3
+                        }
+                        else vertexActions.Add(() => normalList.Add(Vector3.Zero));
+                    }
+                    else vertexActions.Add(() => normalList.Add(Vector3.Zero));
+                    break;
                 }
-
-                void ReadVector3(List<Vector3> list)
+                case VertexAttributeType.Tangent:
                 {
-                    if (layout.dimensions < 3) goto bad;
-                    if (layout.format is VertexAttributeFormat.Float32)
+                    if (dimension is 4)
                     {
-                        list.Add(new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()));
-                        Cleanup(sizeof(float) * 3);
-                        return;
+                        if (format is VertexAttributeFormat.Float32)
+                        {
+                            vertexActions.Add(() => tangentList.Add(new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle())));
+                            used = sizeof(float) * 4;
+                        }
+                        else if (format is VertexAttributeFormat.Half16)
+                        {
+                            vertexActions.Add(() => tangentList.Add(new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf())));
+                            used = 2 * 4; //sizeof(Half) * 4
+                        }
+                        else if (format is VertexAttributeFormat.UNorm8)
+                        {
+                            float Read() => Mathf.Remap(reader.ReadByte(), byte.MinValue, byte.MaxValue, -1f, 1f);
+                            vertexActions.Add(() => tangentList.Add(new Vector4(Read(),Read(),Read(),Read())));
+                            used = 4;
+                        }
+                        else vertexActions.Add(() => tangentList.Add(Vector4.Zero));
                     }
-                    if (layout.format is VertexAttributeFormat.Half16)
-                    {
-                        list.Add(new Vector3((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()));
-                        Cleanup(2 * 3); //sizeof(Half) * 3
-                        //why the fuck is sizeof(Half) unsafe
-                        return;
-                    }
-
-                    bad:
-                    //format is wrong, pad with placeholder value and continue
-                    list.Add(Vector3.Zero);
-                    reader.ReadBytes(layout.Size);
+                    else vertexActions.Add(() => tangentList.Add(Vector4.Zero));
+                    break;
                 }
-
-                void ReadVector4(List<Vector4> list)
+                case VertexAttributeType.Color:
                 {
-                    if (layout.dimensions < 4) goto bad;
-                    if (layout.format is VertexAttributeFormat.Float32)
+                    if (dimension is 4)
                     {
-                        list.Add(new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()));
-                        Cleanup(sizeof(float) * 4);
-                        return;
+                        if (format is VertexAttributeFormat.Float32)
+                        {
+                            vertexActions.Add(() => colorList.Add(new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle())));
+                            used = sizeof(float) * 4;
+                        }
+                        else if (format is VertexAttributeFormat.Half16)
+                        {
+                            vertexActions.Add(() => colorList.Add(new Color((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf())));
+                            used = 2 * 4; //sizeof(Half) * 4
+                        }
+                        else if (format is VertexAttributeFormat.UNorm8)
+                        {
+                            vertexActions.Add(() => colorList.Add(Color.Color8(reader.ReadByte(),reader.ReadByte(),reader.ReadByte(),reader.ReadByte())));
+                            used = 4;
+                        }
+                        else vertexActions.Add(() => colorList.Add(Colors.White));
                     }
-                    if (layout.format is VertexAttributeFormat.Half16)
-                    {
-                        list.Add(new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()));
-                        Cleanup(2 * 4);
-                        return;
-                    }
-
-                    bad:
-                    //format is wrong, pad with placeholder value and continue
-                    list.Add(Vector4.Zero);
-                    reader.ReadBytes(layout.Size);
+                    else vertexActions.Add(() => colorList.Add(Colors.White));
+                    break;
                 }
-
-                void ReadColor(List<Color> list)
+                case VertexAttributeType.UV0:
+                case VertexAttributeType.UV1:
+                case VertexAttributeType.UV2:
+                case VertexAttributeType.UV3:
+                case VertexAttributeType.UV4:
+                case VertexAttributeType.UV5:
+                case VertexAttributeType.UV6:
+                case VertexAttributeType.UV7:
                 {
-                    if (layout.dimensions < 4) goto bad;
-                    if (layout.format is VertexAttributeFormat.Float32)
+                    var index = (int)type - (int)VertexAttributeType.UV0;
+                    var list = uvLists[index];
+                    if (dimension >= 2)
                     {
-                        list.Add(new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()));
-                        Cleanup(sizeof(float) * 4);
-                        return;
+                        if (format is VertexAttributeFormat.Float32)
+                        {
+                            vertexActions.Add(() => list.Add(new Vector2(reader.ReadSingle(), reader.ReadSingle())));
+                            used = sizeof(float) * 2;
+                        }
+                        else if (format is VertexAttributeFormat.Half16)
+                        {
+                            vertexActions.Add(() => list.Add(new Vector2((float)reader.ReadHalf(), (float)reader.ReadHalf())));
+                            used = 2 * 2; //sizeof(Half) * 2
+                        }
+                        else if (format is VertexAttributeFormat.UNorm8)
+                        {
+                            float Read() => Mathf.Remap(reader.ReadByte(), byte.MinValue, byte.MaxValue, 0f, 1f);
+                            vertexActions.Add(() => list.Add(new Vector2(Read(), Read())));
+                            used = 2;
+                        }
+                        else if (format is VertexAttributeFormat.UNorm16)
+                        {
+                            float Read() => Mathf.Remap(reader.ReadUInt16(), ushort.MinValue, ushort.MaxValue, 0f, 1f);
+                            vertexActions.Add(() => list.Add(new Vector2(Read(), Read())));
+                            used = sizeof(ushort) * 2;
+                        }
+                        else vertexActions.Add(() => list.Add(Vector2.Zero));
                     }
-                    if (layout.format is VertexAttributeFormat.Half16)
-                    {
-                        list.Add(new Color((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()));
-                        Cleanup(2 * 4);
-                        return;
-                    }
-                    if (layout.format is VertexAttributeFormat.UNorm8)
-                    {
-                        list.Add(new Color(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()));
-                        Cleanup(sizeof(byte) * 4);
-                        return;
-                    }
-
-                    bad:
-                    //format is wrong, pad with placeholder value and continue
-                    list.Add(Colors.White);
-                    reader.ReadBytes(layout.Size);
+                    else vertexActions.Add(() => list.Add(Vector2.Zero));
+                    break;
                 }
-
-                void ReadUV(List<Vector2> list)
+                case VertexAttributeType.BoneWeights:
                 {
-                    //yeah, it *can* send a 3d or 4d uv, but as far as i can tell they aren't actually used by any shaders
-                    if (layout.dimensions is not (2 or 3 or 4)) goto bad;
-                    //the only format reso uses for UVs is Float32
-                    if (layout.format is not VertexAttributeFormat.Float32) goto bad;
-                    list.Add(new Vector2(reader.ReadSingle(), reader.ReadSingle()));
-                    switch (layout.dimensions)
+                    if (dimension > 4) use8Bones = true;
+                    if (format is not (VertexAttributeFormat.Float32 or VertexAttributeFormat.Half16 or VertexAttributeFormat.UNorm8 or VertexAttributeFormat.UNorm16))
                     {
-                        case 3:
-                            reader.ReadSingle();
-                            break;
-                        case 4:
-                            reader.ReadSingle();
-                            reader.ReadSingle();
-                            break;
+                        vertexActions.Add(use8Bones ? 
+                            () => weightList.AddRange(0, 0, 0, 0, 0, 0, 0, 0) : 
+                            () => weightList.AddRange(0, 0, 0, 0));
+                        break;
                     }
-                    return;
-
-                    bad:
-                    //format is wrong, pad with placeholder value and continue
-                    list.Add(Vector2.Zero);
-                    reader.ReadBytes(layout.Size);
+                    Func<float> readMethod = format switch
+                    {
+                        VertexAttributeFormat.Float32 => () => reader.ReadSingle(),
+                        VertexAttributeFormat.Half16 => () => (float)reader.ReadHalf(),
+                        VertexAttributeFormat.UNorm8 => () => Mathf.Remap(reader.ReadByte(), byte.MinValue, byte.MaxValue, 0f, 1f),
+                        VertexAttributeFormat.UNorm16 => () => Mathf.Remap(reader.ReadUInt16(), ushort.MinValue, ushort.MaxValue, 0f, 1f),
+                        _ => throw new ArgumentOutOfRangeException(), //should never happen
+                    };
+                    
+                    var maxCount = use8Bones ? 8 : 4;
+                    var toRead = Mathf.Min(maxCount, dimension);
+                    
+                    used = toRead * format switch
+                    {
+                        VertexAttributeFormat.Float32 => 4,
+                        VertexAttributeFormat.Half16 => 2,
+                        VertexAttributeFormat.UNorm8 => 1,
+                        VertexAttributeFormat.UNorm16 => 2,
+                    };
+                    vertexActions.Add(() => weightList.AddRange(Enumerable.Range(0, toRead).Select(_ => readMethod.Invoke())));
+                    if (toRead < maxCount)
+                    {
+                        var bufferCount = maxCount - toRead;
+                        vertexActions.Add(() => weightList.AddRange(Enumerable.Range(0, bufferCount).Select(_ => 0f)));
+                    }
+                    break;
                 }
-
-                void Cleanup(int used)
+                case VertexAttributeType.BoneIndicies:
                 {
-                    var remaining = layout.Size - used;
-                    if (remaining <= 0) return;
-                    for (var j = 0; j < remaining; j++)
-                        reader.ReadByte();
+                    if (dimension > 4) use8Bones = true;
+                    if (format is not 
+                        (VertexAttributeFormat.SInt8 or 
+                        VertexAttributeFormat.SInt16 or 
+                        VertexAttributeFormat.SInt32 or 
+                        VertexAttributeFormat.UInt8 or 
+                        VertexAttributeFormat.UInt16 or 
+                        VertexAttributeFormat.UInt32))
+                    {
+                        vertexActions.Add(use8Bones ? 
+                            () => boneIndexList.AddRange(-1, -1, -1, -1, -1, -1, -1, -1) : 
+                            () => boneIndexList.AddRange(-1, -1, -1, -1));
+                        break;
+                    }
+                    Func<int> readMethod = format switch
+                    {
+                        VertexAttributeFormat.SInt8 => () => reader.ReadSByte(),
+                        VertexAttributeFormat.SInt16 => () => reader.ReadInt16(),
+                        VertexAttributeFormat.SInt32 => () => reader.ReadInt32(),
+                        VertexAttributeFormat.UInt8 => () => reader.ReadByte(),
+                        VertexAttributeFormat.UInt16 => () => reader.ReadUInt16(),
+                        VertexAttributeFormat.UInt32 => () => (int)reader.ReadUInt32(), //TODO is this correct?
+                        _ => throw new ArgumentOutOfRangeException(), //should never happen
+                    };
+                    
+                    var maxCount = use8Bones ? 8 : 4;
+                    var toRead = Mathf.Min(maxCount, dimension);
+                    
+                    used = toRead * format switch
+                    {
+                        VertexAttributeFormat.SInt8 => 1,
+                        VertexAttributeFormat.SInt16 => 2,
+                        VertexAttributeFormat.SInt32 => 4,
+                        VertexAttributeFormat.UInt8 => 1,
+                        VertexAttributeFormat.UInt16 => 2,
+                        VertexAttributeFormat.UInt32 => 4,
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    vertexActions.Add(() => boneIndexList.AddRange(Enumerable.Range(0, toRead).Select(_ => readMethod.Invoke())));
+                    if (toRead < maxCount)
+                    {
+                        var bufferCount = maxCount - toRead;
+                        vertexActions.Add(() => boneIndexList.AddRange(Enumerable.Range(0, bufferCount).Select(_ => -1)));
+                    }
+                    break;
                 }
             }
+            if (used > size) throw new Exception($"Used bytes are larger than actual size. Used: {used} Size: {size}");
+            if (used < size)
+            {
+                //if we don't use up the entirety of the size of the attribute, we need to account for it here
+                var toRead = size - used;
+                Action method = toRead switch
+                {
+                    1 => () => reader.ReadByte(),
+                    2 => () => reader.ReadInt16(),
+                    4 => () => reader.ReadInt32(),
+                    _ => () => { for (var i = 0; i < toRead; i++) reader.ReadByte(); },
+                };
+                vertexActions.Add(method);
+            }
         }
+
+        for (var i = 0; i < vertCount; i++)
+            foreach (var action in vertexActions) action.Invoke();
         // TODO: do something
         return default;
     }
