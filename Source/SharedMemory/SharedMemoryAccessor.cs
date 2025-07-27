@@ -10,7 +10,7 @@ public class SharedMemoryAccessor
 {
     public static SharedMemoryAccessor Instance;
 
-    private Dictionary<int, SharedMemoryView> _views = new Dictionary<int, SharedMemoryView>();
+    private Dictionary<int, SharedMemoryView> _views = new();
 
     public string Prefix { get; private set; }
 
@@ -20,20 +20,14 @@ public class SharedMemoryAccessor
         Instance = this;
     }
 
-    public Span<T> AccessData<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged
-    {
-        return MemoryMarshal.Cast<byte, T>(GetMemoryView(descriptor).RawData.Slice(descriptor.offset, descriptor.length));
-    }
+    public Span<T> AccessData<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged =>
+        MemoryMarshal.Cast<byte, T>(GetMemoryView(descriptor).RawData.Slice(descriptor.offset, descriptor.length));
 
-    public UnmanagedSpan<T> AccessDataUnmanaged<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged
-    {
-        return GetMemoryView(descriptor).UnmanagedRawData.Slice(descriptor.offset, descriptor.length).As<T>();
-    }
+    public UnmanagedSpan<T> AccessDataUnmanaged<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged =>
+        GetMemoryView(descriptor).UnmanagedRawData.Slice(descriptor.offset, descriptor.length).As<T>();
 
-    public SharedMemoryViewSlice<T> AccessSlice<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged
-    {
-        return new SharedMemoryViewSlice<T>(GetMemoryView(descriptor), descriptor.offset, descriptor.length);
-    }
+    public SharedMemoryViewSlice<T> AccessSlice<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged => 
+        new(GetMemoryView(descriptor), descriptor.offset, descriptor.length);
 
     private SharedMemoryView GetMemoryView<T>(SharedMemoryBufferDescriptor<T> descriptor) where T : unmanaged
     {
@@ -47,10 +41,8 @@ public class SharedMemoryAccessor
 
     public void ReleaseView(int bufferId)
     {
-        if (_views.TryGetValue(bufferId, out var value))
-        {
-            value.Dispose();
-            _views.Remove(bufferId);
-        }
+        if (!_views.TryGetValue(bufferId, out var value)) return;
+        value.Dispose();
+        _views.Remove(bufferId);
     }
 }

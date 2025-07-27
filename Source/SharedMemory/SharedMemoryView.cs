@@ -8,35 +8,35 @@ namespace Renderite.Godot.Source.SharedMemory;
 // NOTE: decompiled code
 public class SharedMemoryView : IDisposable
 {
-    private MemoryView view;
+    private MemoryView _view;
 
-    private UnmanagedMemoryManager<byte> memory;
+    private UnmanagedMemoryManager<byte> _memory;
 
-    private long capacity;
+    private long _capacity;
 
     public SharedMemoryAccessor Accessor { get; private set; }
 
     public int BufferId { get; private set; }
 
-    public Span<byte> RawData => view.Data;
+    public Span<byte> RawData => _view.Data;
 
-    public Memory<byte> Memory => memory.Memory;
+    public Memory<byte> Memory => _memory.Memory;
 
-    public unsafe UnmanagedSpan<byte> UnmanagedRawData => new UnmanagedSpan<byte>(view.Pointer, (int)capacity);
+    public unsafe UnmanagedSpan<byte> UnmanagedRawData => new(_view.Pointer, (int)_capacity);
 
     public unsafe SharedMemoryView(SharedMemoryAccessor accessor, int bufferId, long capacity)
     {
         Accessor = accessor;
         BufferId = bufferId;
-        this.capacity = capacity;
-        string memoryViewName = Renderite.Shared.Helper.ComposeMemoryViewName(accessor.Prefix, bufferId);
-        view = new MemoryView(new MemoryViewOptions(memoryViewName, capacity), new NullLoggerFactory());
-        memory = new UnmanagedMemoryManager<byte>(view.Pointer, (int)capacity);
+        _capacity = capacity;
+        var memoryViewName = Helper.ComposeMemoryViewName(accessor.Prefix, bufferId);
+        _view = new MemoryView(new MemoryViewOptions(memoryViewName, capacity), new NullLoggerFactory());
+        _memory = new UnmanagedMemoryManager<byte>(_view.Pointer, (int)capacity);
     }
 
     public void Dispose()
     {
-        view.Dispose();
-        view = null;
+        _view.Dispose();
+        _view = null;
     }
 }
