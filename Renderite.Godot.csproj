@@ -1,27 +1,28 @@
-<Project Sdk="Godot.NET.Sdk/4.5.0-beta.2">
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <EnableDynamicLoading>true</EnableDynamicLoading>
-    <RenderitePath>$(MSBuildThisFileDirectory)Renderite</RenderitePath>
-    <RenderitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\</RenderitePath>
-    <RenderitePath Condition="Exists('/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/')">/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/</RenderitePath>
-  </PropertyGroup>
-  
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
-      <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
-    </Reference>
-    <Reference Include="Renderite.Shared">
-      <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Renderite.Shared.dll</HintPath>
-    </Reference>
-    <Reference Include="Elements.Data">
-      <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Elements.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="Enums.NET">
-      <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Enums.NET.dll</HintPath>
-    </Reference>
-    <Reference Include="YellowDogMan.Cloudtoid.Interprocess">
-      <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/YellowDogMan.Cloudtoid.Interprocess.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+<Project Sdk="Godot.NET.Sdk/4.5.0-beta.3">
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RenderitePath>$(MSBuildThisFileDirectory)Renderite/</RenderitePath>
+        <RenderitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\</RenderitePath>
+        <RenderitePath Condition="Exists('/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/')">/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/</RenderitePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+            <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+        </Reference>
+        <Reference Include="Renderite.Shared">
+            <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Renderite.Shared.dll</HintPath>
+        </Reference>
+        <Reference Include="Elements.Data">
+            <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Elements.Data.dll</HintPath>
+        </Reference>
+        <Reference Include="Enums.NET">
+            <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/Enums.NET.dll</HintPath>
+        </Reference>
+        <Reference Include="YellowDogMan.Cloudtoid.Interprocess">
+            <HintPath>$(RenderitePath)Renderite.Renderer_Data/Managed/YellowDogMan.Cloudtoid.Interprocess.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 </Project>

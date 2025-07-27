@@ -39,7 +39,7 @@ public partial class RenderSpace : Node3D
             */
         }
     }
-    
+
     public void HandleUpdate(RenderSpaceUpdate data)
     {
         IsActive = data.isActive;
@@ -48,11 +48,9 @@ public partial class RenderSpace : Node3D
         if (IsActive != _lastActive)
         {
             _lastActive = IsActive;
-            
         }
         if (IsActive)
         {
-            
         }
 
         RootPosition = data.rootTransform.position.ToGodot();
@@ -63,19 +61,36 @@ public partial class RenderSpace : Node3D
         if (data.meshRenderersUpdate is not null) HandleMeshRenderablesUpdate(data.meshRenderersUpdate);
         if (data.skinnedMeshRenderersUpdate is not null) HandleSkinnedMeshRenderablesUpdate(data.skinnedMeshRenderersUpdate);
         if (data.lightsUpdate is not null) HandleLightsUpdate(data.lightsUpdate);
+        if (data.reflectionProbeSH2Taks is not null)
+        {
+            if (!data.reflectionProbeSH2Taks.tasks.IsEmpty)
+            {
+                var tasks = SharedMemoryAccessor.Instance.AccessData(data.reflectionProbeSH2Taks.tasks);
+                for (int i = 0; i < tasks.Length; i++)
+                {
+                    // FrooxEngine hates this one little trick
+                    // (it crashes if we don't do anything with this specific task...)
+                    ref var reference = ref tasks[i];
+                    reference.result = ComputeResult.Failed;
+                }
+            }
+        }
     }
     public void HandleTransformUpdate(TransformsUpdate update)
     {
-        var removals = SharedMemoryManager.Instance.Read(update.removals);
-        foreach (var remove in removals)
+        if (!update.removals.IsEmpty)
         {
-            if (remove < 0) break;
-            if (remove >= Nodes.Count) continue;
-            var toRemove = Nodes[remove];
-            foreach (var c in toRemove.GetChildren()) toRemove.RemoveChild(c);
-            toRemove.QueueFree();
-            Nodes[remove] = Nodes.Last();
-            Nodes.RemoveAt(Nodes.Count - 1);
+            var removals = SharedMemoryAccessor.Instance.AccessData(update.removals);
+            foreach (var remove in removals)
+            {
+                if (remove < 0) break;
+                if (remove >= Nodes.Count) continue;
+                var toRemove = Nodes[remove];
+                foreach (var c in toRemove.GetChildren()) toRemove.RemoveChild(c);
+                toRemove.QueueFree();
+                Nodes[remove] = Nodes.Last();
+                Nodes.RemoveAt(Nodes.Count - 1);
+            }
         }
         while (Nodes.Count < update.targetTransformCount)
         {
@@ -85,7 +100,7 @@ public partial class RenderSpace : Node3D
         }
         if (!update.parentUpdates.IsEmpty)
         {
-            var parentUpdates = SharedMemoryManager.Instance.Read(update.parentUpdates);
+            var parentUpdates = SharedMemoryAccessor.Instance.AccessData(update.parentUpdates);
             // i just want to mention i compressed around 25-30 loc down to this
             foreach (var parentUpdate in parentUpdates)
             {
@@ -98,7 +113,7 @@ public partial class RenderSpace : Node3D
         }
         if (!update.poseUpdates.IsEmpty)
         {
-            var poseUpdates = SharedMemoryManager.Instance.Read(update.poseUpdates);
+            var poseUpdates = SharedMemoryAccessor.Instance.AccessData(update.poseUpdates);
             foreach (var poseUpdate in poseUpdates)
             {
                 if (poseUpdate.transformId < 0) break;
@@ -111,7 +126,7 @@ public partial class RenderSpace : Node3D
     {
         HandleSceneInstanceAdditionRemoval(Lights, update);
         if (update.states.IsEmpty) return;
-        var states = SharedMemoryManager.Instance.Read(update.states);
+        var states = SharedMemoryAccessor.Instance.AccessData(update.states);
         foreach (var state in states)
         {
             if (state.renderableIndex < 0) break;
@@ -172,19 +187,19 @@ public partial class RenderSpace : Node3D
     public void HandleSkinnedMeshRenderablesUpdate(SkinnedMeshRenderablesUpdate update)
     {
         //skinnedmeshes don't listen to transform updates because bones need to be done in global space, rather than relative to the root
-        HandleSceneInstanceAdditionRemoval(SkinnedMeshes, update, false); 
+        HandleSceneInstanceAdditionRemoval(SkinnedMeshes, update, false);
         HandleMeshRenderablesUpdateBase(update, SkinnedMeshes);
         //TODO: bounds updates
         if (!update.boneAssignments.IsEmpty)
         {
-            var boneAssignments = SharedMemoryManager.Instance.Read(update.boneAssignments);
-            var boneIndices = SharedMemoryManager.Instance.Read(update.boneTransformIndexes);
+            var boneAssignments = SharedMemoryAccessor.Instance.AccessData(update.boneAssignments);
+            var boneIndices = SharedMemoryAccessor.Instance.AccessData(update.boneTransformIndexes);
             var boneIndex = 0;
             foreach (var boneAssignment in boneAssignments)
             {
                 if (boneAssignment.renderableIndex < 0) break;
                 var mesh = SkinnedMeshes[boneAssignment.renderableIndex];
-                
+
                 var bones = new int[boneAssignment.boneCount];
                 for (var i = 0; i < bones.Length; i++) bones[i] = boneIndices[boneIndex++];
 
@@ -194,8 +209,8 @@ public partial class RenderSpace : Node3D
         }
         if (!update.blendshapeUpdateBatches.IsEmpty)
         {
-            var blendshapeUpdateBatches = SharedMemoryManager.Instance.Read(update.blendshapeUpdateBatches);
-            var blendshapeUpdates = SharedMemoryManager.Instance.Read(update.blendshapeUpdates);
+            var blendshapeUpdateBatches = SharedMemoryAccessor.Instance.AccessData(update.blendshapeUpdateBatches);
+            var blendshapeUpdates = SharedMemoryAccessor.Instance.AccessData(update.blendshapeUpdates);
             var updateIndex = 0;
             foreach (var blendshapeUpdateBatch in blendshapeUpdateBatches)
             {
@@ -218,8 +233,8 @@ public partial class RenderSpace : Node3D
     {
         if (!update.meshStates.IsEmpty)
         {
-            var meshStates = SharedMemoryManager.Instance.Read(update.meshStates);
-            var materials = SharedMemoryManager.Instance.Read(update.meshMaterialsAndPropertyBlocks);
+            var meshStates = SharedMemoryAccessor.Instance.AccessData(update.meshStates);
+            var materials = SharedMemoryAccessor.Instance.AccessData(update.meshMaterialsAndPropertyBlocks);
             var materialsIndex = 0;
             foreach (var meshState in meshStates)
             {
@@ -263,7 +278,7 @@ public partial class RenderSpace : Node3D
     {
         if (!update.removals.IsEmpty)
         {
-            var removals = SharedMemoryManager.Instance.Read(update.removals);
+            var removals = SharedMemoryAccessor.Instance.AccessData(update.removals);
             foreach (var remove in removals)
             {
                 if (remove < 0) break;
@@ -275,7 +290,7 @@ public partial class RenderSpace : Node3D
         }
         if (!update.additions.IsEmpty)
         {
-            var additions = SharedMemoryManager.Instance.Read(update.additions);
+            var additions = SharedMemoryAccessor.Instance.AccessData(update.additions);
 
             foreach (var addition in additions)
             {

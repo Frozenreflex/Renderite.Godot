@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Godot;
 
 namespace Renderite.Godot.Source;
+
 public partial class TransformNode : Node3D
 {
     public event Action<TransformNode> GlobalTransformChanged = _ => { };

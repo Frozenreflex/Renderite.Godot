@@ -12,7 +12,6 @@ public class SceneInstanceManager
     public SceneInstanceManager(TransformNode b) => Initialize(b);
     public SceneInstanceManager()
     {
-        
     }
     public void Initialize(TransformNode b, bool listenToTransformChanges = true)
     {

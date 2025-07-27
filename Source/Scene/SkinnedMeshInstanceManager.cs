@@ -32,5 +32,6 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
             Manager = null;
         }
     }
+
     public Bone[] TrackedBones = [];
 }

@@ -33,13 +33,14 @@ public class AssetManager
             if (Dictionary.TryGetValue(index, out var rid)) RenderingServer.FreeRid(rid);
         }
     }
+
     public MaterialManager MaterialManager = new();
     public AssetContainer Meshes = new(RenderingServer.MeshCreate);
     //public AssetContainer Texture2Ds = new();
     //public AssetContainer Texture3Ds = new();
     //public AssetContainer Cubemaps = new();
     //public AssetContainer RenderTextures = new();
-    
+
     public void HandleRenderCommand(RendererCommand command)
     {
         switch (command)
@@ -59,12 +60,12 @@ public class AssetManager
                 var meshData = MeshConverter.Convert(meshUploadData);
                 foreach (var mesh in meshData)
                     RenderingServer.MeshAddSurfaceFromArrays(rid, RenderingServer.PrimitiveType.Triangles, mesh.arrays, mesh.blendShapes, null, (RenderingServer.ArrayFormat)mesh.flags);
-                
+
                 //TODO convert meshes
                 //resonite meshes can have up to 8 UV channels while godot only natively supports 2
                 //however, godot also supports up to 4 custom data channels, where each channel can be one of (4 byte colors, 2 or 4 half precision floats, or between 1-4 floats),
                 //so we can use 3 of the custom channels for UVs if we need to, it might be good to check what range of channels reso's shaders use
-                
+
                 break;
             }
             case MeshUnload meshUnload:

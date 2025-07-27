@@ -10,6 +10,7 @@ public class PackerMemoryPool : IMemoryPackerEntityPool
     public T Borrow<T>() where T : class, IMemoryPackable, new() => PackerMemoryPool<T>.Borrow();
     public void Return<T>(T value) where T : class, IMemoryPackable, new() => PackerMemoryPool<T>.Return(value);
 }
+
 public static class PackerMemoryPool<T> where T : class, IMemoryPackable, new()
 {
     private static readonly ConcurrentStack<T> Instances = new();

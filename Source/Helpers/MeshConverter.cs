@@ -14,7 +14,7 @@ public static class MeshConverter
 {
     public static List<(Array arrays, Array blendShapes, Mesh.ArrayFormat flags)> Convert(MeshUploadData meshUploadData)
     {
-        var buffer = SharedMemoryManager.Instance.Read(meshUploadData.buffer);
+        var buffer = SharedMemoryAccessor.Instance.AccessData(meshUploadData.buffer);
         var mem = new MemoryStream(buffer.ToArray());
         var reader = new BinaryReader(mem);
         var vertCount = meshUploadData.vertexCount;
@@ -35,7 +35,7 @@ public static class MeshConverter
         var usesUV7 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV7);
         var usesBoneWeights = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneWeights);
         var usesBoneIndices = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneIndicies);
-        
+
         var positionList = new List<Vector3>(usesPosition ? vertCount : 0);
         var normalList = new List<Vector3>(usesNormal ? vertCount : 0);
         var tangentList = new List<Vector4>(usesTangent ? vertCount : 0);
@@ -94,21 +94,18 @@ public static class MeshConverter
                         ReadUV(uv7List);
                         break;
                     case VertexAttributeType.BoneWeights:
-                        
+
                         break;
                     case VertexAttributeType.BoneIndicies:
                         break;
-
-
-                    
                 }
 
                 continue;
 
                 void ReadBoneInfo<T>(List<T> list, Action<T> read)
                 {
-                    
                 }
+
                 void ReadVector3(List<Vector3> list)
                 {
                     if (layout.dimensions < 3) goto bad;
@@ -125,12 +122,13 @@ public static class MeshConverter
                         //why the fuck is sizeof(Half) unsafe
                         return;
                     }
-                    
+
                     bad:
                     //format is wrong, pad with placeholder value and continue
                     list.Add(Vector3.Zero);
                     reader.ReadBytes(layout.Size);
                 }
+
                 void ReadVector4(List<Vector4> list)
                 {
                     if (layout.dimensions < 4) goto bad;
@@ -152,6 +150,7 @@ public static class MeshConverter
                     list.Add(Vector4.Zero);
                     reader.ReadBytes(layout.Size);
                 }
+
                 void ReadColor(List<Color> list)
                 {
                     if (layout.dimensions < 4) goto bad;
@@ -198,7 +197,7 @@ public static class MeshConverter
                             break;
                     }
                     return;
-                    
+
                     bad:
                     //format is wrong, pad with placeholder value and continue
                     list.Add(Vector2.Zero);
@@ -214,5 +213,7 @@ public static class MeshConverter
                 }
             }
         }
+        // TODO: do something
+        return default;
     }
 }

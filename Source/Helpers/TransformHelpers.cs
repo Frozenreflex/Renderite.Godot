@@ -11,7 +11,7 @@ public static class TransformHelpers
     /// <summary>
     /// Constructs a Transform3D, given a translation (position), rotation, and scale.
     /// </summary>
-    public static Transform3D TransformFromTRS(Vector3 p, Quaternion r, Vector3 s) => new Transform3D(new Basis(r), p).ScaledLocal(s); 
+    public static Transform3D TransformFromTRS(Vector3 p, Quaternion r, Vector3 s) => new Transform3D(new Basis(r), p).ScaledLocal(s);
     //TODO this name also sucks balls
     /// <summary>
     /// Constructs a Transform3D, given a translation (position) and rotation.
