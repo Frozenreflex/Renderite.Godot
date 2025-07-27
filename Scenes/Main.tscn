@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://choup10xc4k3a"]
+[gd_scene load_steps=3 format=3 uid="uid://choup10xc4k3a"]
 
 [ext_resource type="Script" uid="uid://ddxchka2t5s7j" path="res://Source/Main.cs" id="1_r150o"]
+[ext_resource type="Script" uid="uid://bq0wwhwobck75" path="res://Source/RendererManager.cs" id="2_idj7w"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_r150o")
+
+[node name="RendererManager" type="Node3D" parent="."]
+script = ExtResource("2_idj7w")
