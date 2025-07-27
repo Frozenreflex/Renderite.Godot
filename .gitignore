@@ -6,3 +6,6 @@
 
 .idea/
 *.DotSettings.user
+
+# Renderite libraries (absolutely proprietary)
+Renderite/

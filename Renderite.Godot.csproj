@@ -1,8 +1,9 @@
-<Project Sdk="Godot.NET.Sdk/4.5.0-beta.2">
+<Project Sdk="Godot.NET.Sdk/4.5.0-beta.3">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <RenderitePath>$(MSBuildThisFileDirectory)Renderite</RenderitePath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RenderitePath>$(MSBuildThisFileDirectory)Renderite/</RenderitePath>
     <RenderitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\</RenderitePath>
     <RenderitePath Condition="Exists('/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/')">/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/</RenderitePath>
   </PropertyGroup>
