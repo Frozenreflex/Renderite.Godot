@@ -11,11 +11,16 @@ public class MeshInstanceManager : AssetSceneInstanceManager
         {
             if (field is not null && TrackMeshAssetChanges) field.MeshChanged -= OnMeshAssetChanged;
             field = value;
-            if (value is null) RenderingServer.InstanceSetBase(InstanceRid, NullRid);
+            if (value is null)
+            {
+                RenderingServer.InstanceSetBase(InstanceRid, NullRid);
+                InstanceValid = false;
+            }
             else
             {
                 RenderingServer.InstanceSetBase(InstanceRid, Mesh.AssetID);
                 if (TrackMeshAssetChanges) field.MeshChanged += OnMeshAssetChanged;
+                InstanceValid = true;
             }
             OnMeshChanged();
         }

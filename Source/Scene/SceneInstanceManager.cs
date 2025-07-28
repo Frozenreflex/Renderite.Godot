@@ -8,6 +8,16 @@ public class SceneInstanceManager
     public Rid InstanceRid { get; private set; }
     public bool Initialized { get; private set; }
     private bool _listening = false;
+    public bool InstanceValid
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            if (value && _listening) UpdateTransform();
+            field = value;
+        }
+    }
 
     public SceneInstanceManager(TransformNode b) => Initialize(b);
     public SceneInstanceManager()
@@ -22,7 +32,6 @@ public class SceneInstanceManager
         if (listenToTransformChanges)
         {
             Base.GlobalTransformChanged += BaseOnGlobalTransformChanged;
-            UpdateTransform();
             _listening = true;
         }
         OnInitialize();
@@ -32,7 +41,10 @@ public class SceneInstanceManager
     {
         
     }
-    private void UpdateTransform() => RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
+    protected void UpdateTransform()
+    {
+        if (InstanceValid) RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
+    }
     private void BaseOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
 
     public virtual void Cleanup()

@@ -134,6 +134,7 @@ public partial class RenderSpace : Node3D
             var type = state.type.ToGodot();
             if (light.Type != type)
             {
+                light.InstanceValid = false;
                 light.Type = type;
                 var newRid = type switch
                 {
@@ -144,6 +145,7 @@ public partial class RenderSpace : Node3D
                 RenderingServer.InstanceSetBase(light.InstanceRid, newRid);
                 if (light.LightRid != new Rid()) RenderingServer.FreeRid(light.LightRid);
                 light.LightRid = newRid;
+                light.InstanceValid = true;
             }
             var lightRid = light.LightRid;
             //TODO: check for accuracy, some light settings don't exist in godot

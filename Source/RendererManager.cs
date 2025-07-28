@@ -27,19 +27,41 @@ public partial class RendererManager : Node
     {
         base._Ready();
         Instance = this;
-        // TODO: Maybe find the file automatically so testing is less annoying?
-        var queueName = "vuH_OMnuR4V+_3XeHZt6PT8vMees18YjYqkSutMk8JY=";
+        
+        var queueName = "Sn7D17OLBZu7tfHcTXDa6c2zrr2FFkm+wJ4biEe7Qy0=";
         var queueCapacity = 8388608;
+
+        /*
+        var args = OS.GetCmdlineUserArgs();
+         
+        for (var i = 0; i < args.Length; i++)
+        {
+            var arg = args[i].ToLower();
+            if (arg.Contains("queuename"))
+            {
+                var next = args[i + 1];
+                i++;
+                queueName = next;
+            }
+            else if (arg.Contains("queuecapacity"))
+            {
+                var next = args[i + 1];
+                i++;
+                queueCapacity = int.Parse(next);
+            }
+        }
+        */
+        
         GD.Print($"Connecting to {queueName} (capacity: {queueCapacity})");
         _primaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
         _primaryMessagingManager.CommandHandler = HandleRenderCommand;
         _primaryMessagingManager.FailureHandler = HandleMessagingFailure;
-        _primaryMessagingManager.WarningHandler = delegate(string str) { GD.Print(str); };
+        _primaryMessagingManager.WarningHandler = GD.Print;
         _primaryMessagingManager.Connect(queueName + "Primary", isAuthority: false, queueCapacity);
         _backgroundMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
         _backgroundMessagingManager.CommandHandler = HandleRenderCommand;
         _backgroundMessagingManager.FailureHandler = HandleMessagingFailure;
-        _backgroundMessagingManager.WarningHandler = delegate(string str) { GD.Print(str); };
+        _backgroundMessagingManager.WarningHandler = GD.Print;
         _backgroundMessagingManager.Connect(queueName + "Background", isAuthority: false, queueCapacity);
         GD.Print("Connected!");
     }
@@ -49,8 +71,10 @@ public partial class RendererManager : Node
         if (!_initFinalized)
             return;
 
-        FrameStartData frameStartData = new FrameStartData();
-        frameStartData.lastFrameIndex = LastFrameIndex;
+        var frameStartData = new FrameStartData
+        {
+            lastFrameIndex = LastFrameIndex,
+        };
         _primaryMessagingManager.SendCommand(frameStartData);
 
         while (_frameData == null)

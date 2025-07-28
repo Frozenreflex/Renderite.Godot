@@ -12,12 +12,19 @@ namespace Renderite.Godot.Source;
 
 public class MeshAsset
 {
-    public readonly Rid AssetID;
+    public Rid AssetID { get; private set; }
     public Transform3D[] Skin = [];
 
     public event Action MeshChanged = () => { };
 
-    public static MeshAsset Create() => new();
+    public static MeshAsset Create()
+    {
+        var asset = new MeshAsset
+        {
+            AssetID = RenderingServer.MeshCreate(),
+        };
+        return asset;
+    }
     public void Cleanup()
     {
         if (AssetID != new Rid()) RenderingServer.FreeRid(AssetID);
@@ -40,23 +47,22 @@ public class MeshAsset
             var vertCount = meshUploadData.vertexCount;
             var boneWeightCount = meshUploadData.boneWeightCount;
             var boneCount = meshUploadData.boneCount;
-
-            //TODO: mesh upload hint
-
-            var usesPosition = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.Positions) > 0;
-            var usesNormal = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.Normals) > 0;
-            var usesTangent = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.Tangents) > 0;
-            var usesColor = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.Colors) > 0;
-            var usesUV0 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV0s) > 0;
-            var usesUV1 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV1s) > 0;
-            var usesUV2 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV2s) > 0;
-            var usesUV3 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV3s) > 0;
-            var usesUV4 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV4s) > 0;
-            var usesUV5 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV5s) > 0;
-            var usesUV6 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV6s) > 0;
-            var usesUV7 = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.UV7s) > 0;
-            var usesBoneWeights = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.BoneWeights) > 0;
-            var usesBoneIndices = (meshUploadData.uploadHint.Flags | MeshUploadHint.Flag.BoneWeights) > 0;
+            
+            //ignore the upload hint, it's a dirty liar
+            var usesPosition = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Position);
+            var usesNormal = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Normal);
+            var usesTangent = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Tangent);
+            var usesColor = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Color);
+            var usesUV0 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV0);
+            var usesUV1 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV1);
+            var usesUV2 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV2);
+            var usesUV3 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV3);
+            var usesUV4 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV4);
+            var usesUV5 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV5);
+            var usesUV6 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV6);
+            var usesUV7 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV7);
+            var usesBoneWeights = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneWeights);
+            var usesBoneIndices = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneIndicies);
 
             var positionList = new List<Vector3>(usesPosition ? vertCount : 0);
             var normalList = new List<Vector3>(usesNormal ? vertCount : 0);

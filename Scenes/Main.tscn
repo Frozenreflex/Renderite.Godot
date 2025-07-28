@@ -1,10 +1,24 @@
-[gd_scene load_steps=3 format=3 uid="uid://choup10xc4k3a"]
+[gd_scene load_steps=6 format=3 uid="uid://choup10xc4k3a"]
 
 [ext_resource type="Script" uid="uid://ddxchka2t5s7j" path="res://Source/Main.cs" id="1_r150o"]
 [ext_resource type="Script" uid="uid://bq0wwhwobck75" path="res://Source/RendererManager.cs" id="2_idj7w"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_idj7w"]
+
+[sub_resource type="Sky" id="Sky_kln2b"]
+sky_material = SubResource("ProceduralSkyMaterial_idj7w")
+
+[sub_resource type="Environment" id="Environment_rgh2o"]
+background_mode = 2
+sky = SubResource("Sky_kln2b")
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_r150o")
 
 [node name="RendererManager" type="Node3D" parent="."]
 script = ExtResource("2_idj7w")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_rgh2o")
