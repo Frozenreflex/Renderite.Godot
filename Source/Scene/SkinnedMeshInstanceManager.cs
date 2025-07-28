@@ -80,5 +80,6 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
     {
         base.Cleanup();
         RenderingServer.FreeRid(SkeletonRid);
+        SkeletonRid = NullRid;
     }
 }

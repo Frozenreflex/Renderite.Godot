@@ -28,7 +28,7 @@ public partial class RendererManager : Node
         base._Ready();
         Instance = this;
         
-        var queueName = "Sn7D17OLBZu7tfHcTXDa6c2zrr2FFkm+wJ4biEe7Qy0=";
+        var queueName = "VQGTXjUVcJp5wOvGKJ+Ifsl+GtVZIBdFlMa34M2qsH4=";
         var queueCapacity = 8388608;
 
         /*

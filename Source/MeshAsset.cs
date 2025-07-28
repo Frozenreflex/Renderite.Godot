@@ -41,6 +41,12 @@ public class MeshAsset
             if (!meshUploadData.buffer.IsEmpty)
                 meshBuffer.Data = SharedMemoryAccessor.Instance.AccessSlice(meshUploadData.buffer);
 
+            if (meshBuffer.SubmeshCount == 0)
+            {
+                //GD.Print("mesh with no submeshes, skipping to end");
+                goto end;
+            }
+
 
             var vertexMem = new MemoryStream(meshBuffer.GetRawVertexBufferData().ToArray());
             var vertReader = new BinaryReader(vertexMem);
@@ -352,11 +358,13 @@ public class MeshAsset
             var typeList = new List<RenderingServer.PrimitiveType>();
 
             if (meshBuffer.Submeshes is not null)
+            {
                 foreach (var submesh in meshBuffer.Submeshes)
                 {
-                    indexList.Add(indexBuffer.Skip(submesh.indexStart).Take(submesh.indexCount).ToArray());
+                    indexList.Add(submesh.indexCount > 0 ? indexBuffer.Skip(submesh.indexStart).Take(submesh.indexCount).ToArray() : [0, 0, 0]);
                     typeList.Add(submesh.topology.ToGodot());
                 }
+            }
 
             var baseArray = new Array();
             baseArray.Resize((int)Mesh.ArrayType.Max);
@@ -390,6 +398,8 @@ public class MeshAsset
                 var type = typeList[i];
                 RenderingServer.MeshAddSurfaceFromArrays(AssetID, type, arr, null, null, form);
             }
+            
+            end:
 
             var bindPoses = meshBuffer.GetBindPosesBuffer<RenderMatrix4x4>();
             Skin = new Transform3D[bindPoses.Length];
