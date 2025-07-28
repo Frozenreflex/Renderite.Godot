@@ -106,12 +106,12 @@ public class MeshAsset
                     {
                         if (format is VertexAttributeFormat.Float32)
                         {
-                            vertexActions.Add(() => positionList.Add(new Vector3(vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                            vertexActions.Add(() => positionList.Add(new Vector3(-vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
                             used = sizeof(float) * 3;
                         }
                         else if (format is VertexAttributeFormat.Half16)
                         {
-                            vertexActions.Add(() => positionList.Add(new Vector3((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                            vertexActions.Add(() => positionList.Add(new Vector3(-(float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                             used = 2 * 3; //sizeof(Half) * 3
                         }
                         else vertexActions.Add(() => positionList.Add(Vector3.Zero));
@@ -124,12 +124,12 @@ public class MeshAsset
                         {
                             if (format is VertexAttributeFormat.Float32)
                             {
-                                vertexActions.Add(() => normalList.Add(new Vector3(vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                                vertexActions.Add(() => normalList.Add(new Vector3(-vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
                                 used = sizeof(float) * 3;
                             }
                             else if (format is VertexAttributeFormat.Half16)
                             {
-                                vertexActions.Add(() => normalList.Add(new Vector3((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                                vertexActions.Add(() => normalList.Add(new Vector3(-(float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                                 used = 2 * 3; //sizeof(Half) * 3
                             }
                             else vertexActions.Add(() => normalList.Add(Vector3.Zero));
@@ -139,6 +139,7 @@ public class MeshAsset
                     }
                     case VertexAttributeType.Tangent:
                     {
+                        //todo: do tangents need to somehow be flipped on the x axis?
                         if (dimension is 4)
                         {
                             if (format is VertexAttributeFormat.Float32)

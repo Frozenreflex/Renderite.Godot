@@ -9,6 +9,7 @@ public class MeshInstanceManager : AssetSceneInstanceManager
         get;
         set
         {
+            if (field == value) return;
             if (field is not null && TrackMeshAssetChanges) field.MeshChanged -= OnMeshAssetChanged;
             field = value;
             if (value is null)

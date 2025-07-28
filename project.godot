@@ -15,9 +15,17 @@ run/main_scene="uid://choup10xc4k3a"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
+[debug_draw_3d]
+
+settings/addon_root_folder="res://addons/debug_draw_3d"
+
 [dotnet]
 
 project/assembly_name="Renderite.Godot"
+
+[gui]
+
+theme/default_font_multichannel_signed_distance_field=true
 
 [layer_names]
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using Renderite.Godot.Source.Helpers;
 using Renderite.Shared;
 using Renderite.Godot.Source.SharedMemory;
 
@@ -28,7 +29,7 @@ public partial class RendererManager : Node
         base._Ready();
         Instance = this;
         
-        var queueName = "VQGTXjUVcJp5wOvGKJ+Ifsl+GtVZIBdFlMa34M2qsH4=";
+        var queueName = "J2nr981r_+YmKjedg+Z926erBDoCxVKyDZ3GHddE3Xc=";
         var queueCapacity = 8388608;
 
         /*
@@ -87,6 +88,8 @@ public partial class RendererManager : Node
             PackerMemoryPool.Instance.Return(_frameData);
             _frameData = null;
         }
+        
+        DebugDraw();
     }
     private void HandleFrameUpdate(FrameSubmitData submitData)
     {
@@ -172,5 +175,24 @@ public partial class RendererManager : Node
     private void HandleMessagingFailure(Exception ex)
     {
         GD.Print("Exception in messaging system:\n" + ex);
+    }
+    private void DebugDraw()
+    {
+        const int textSize = 3;
+        foreach (var (spaceIndex, space) in Spaces)
+        {
+            foreach (var (skinnedMesh, index) in space.SkinnedMeshes.WithIndex())
+            {
+                DebugDraw3D.DrawText(skinnedMesh.Base.GlobalPosition, $"Space {spaceIndex}\nSkinned Mesh {index}\n{skinnedMesh.Mesh is not null}", textSize);
+                foreach (var bone in skinnedMesh.TrackedBones)
+                {
+                    if (bone.Node is not null) DebugDraw3D.DrawText(bone.Node.GlobalPosition, $"Space {spaceIndex}\nSkinned Mesh {index}\nBone {bone.BoneIndex}", textSize);
+                }
+            }
+            foreach (var (mesh, index) in space.Meshes.WithIndex())
+            {
+                DebugDraw3D.DrawText(mesh.Base.GlobalPosition, $"Space {spaceIndex}\nMesh {index}\n{mesh.Mesh is not null}", textSize);
+            }
+        }
     }
 }

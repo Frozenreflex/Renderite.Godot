@@ -42,6 +42,17 @@ public class AssetManager
     //public AssetContainer Cubemaps = new();
     //public AssetContainer RenderTextures = new();
 
+    public MeshAsset GetMesh(int index)
+    {
+        if (index < 0) return null;
+        if (!Meshes.TryGetValue(index, out var mesh))
+        {
+            mesh = MeshAsset.Create();
+            Meshes[index] = mesh;
+        }
+        return mesh;
+    }
+
     public void HandleRenderCommand(RendererCommand command)
     {
         switch (command)
@@ -62,6 +73,12 @@ public class AssetManager
                 }
                 mesh.Upload(meshUploadData);
 
+                /*
+                var result = new MeshUploadResult();
+                result.assetId = index;
+                result.instanceChanged = true;
+                */
+                
                 break;
             }
             case MeshUnload meshUnload:
