@@ -1,4 +1,5 @@
 using Godot;
+using Renderite.Godot.Source.Helpers;
 
 namespace Renderite.Godot.Source.Scene;
 
@@ -15,27 +16,18 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
             Node = node;
             BoneIndex = bone;
             Manager = manager;
-            if (GodotObject.IsInstanceValid(Node))
-            {
-                Node.GlobalTransformChanged += NodeOnGlobalTransformChanged;
-                UpdateTransform();
-            }
-            else RenderingServer.SkeletonBoneSetTransform(Manager.InstanceRid, BoneIndex, Transform3D.Identity);
+            if (GodotObject.IsInstanceValid(Node)) Node.GlobalTransformChanged += NodeOnGlobalTransformChanged;
         }
         public void UpdateTransform()
         {
             if (Manager.Mesh.AssetID == NullRid) return;
+            var skin = Manager.Mesh.Skin;
+            if (BoneIndex >= skin.Length) return;
+            var skinValue = skin.ElementAtOrValue(BoneIndex, Transform3D.Identity);
             
-            if (Node is null)
-                RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Transform3D.Identity);
-            else
-            {
-                var skin = Manager.Mesh.Skin;
-                var skinValue = BoneIndex >= 0 && BoneIndex < skin.Length ? skin[BoneIndex] : Transform3D.Identity;
-                RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Node.GlobalTransform * skinValue);
-            }
+            if (Node is null) RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, skinValue);
+            else RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, (Manager.InverseGlobal * Node.GlobalTransform) * skinValue);
         }
-        public void ResetTransform() => RenderingServer.SkeletonBoneSetTransform(Manager.SkeletonRid, BoneIndex, Transform3D.Identity);
         private void NodeOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
         public void Cleanup()
         {
@@ -48,12 +40,11 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
 
     protected override bool TrackMeshAssetChanges => true;
 
-    private void UpdateAllTransforms()
+    public void UpdateAllTransforms()
     {
+        if (TrackedBones is null || Mesh is null) return;
+        RenderingServer.SkeletonAllocateData(SkeletonRid, Mesh.Skin.Length);
         if (InstanceRid != NullRid && Mesh.AssetID != NullRid)
-            foreach (var bone in TrackedBones)
-                bone?.ResetTransform();
-        else
             foreach (var bone in TrackedBones)
                 bone?.UpdateTransform();
     }
@@ -65,9 +56,18 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         UpdateAllTransforms();
     }
 
-    public Bone[] TrackedBones = [];
+    public Bone[] TrackedBones
+    {
+        get;
+        set
+        {
+            field = value;
+            UpdateAllTransforms();
+        }
+    }
 
     public Rid SkeletonRid;
+    public Transform3D InverseGlobal { get; private set; }
 
     protected override void OnInitialize()
     {
@@ -75,6 +75,13 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         SkeletonRid = RenderingServer.SkeletonCreate();
         RenderingServer.InstanceAttachSkeleton(InstanceRid, SkeletonRid);
     }
+    protected override void BaseOnGlobalTransformChanged(TransformNode obj)
+    {
+        base.BaseOnGlobalTransformChanged(obj);
+        UpdateInverseGlobal();
+        UpdateAllTransforms();
+    }
+    private void UpdateInverseGlobal() => InverseGlobal = Base.GlobalTransform.AffineInverse();
 
     public override void Cleanup()
     {

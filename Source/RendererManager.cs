@@ -29,7 +29,7 @@ public partial class RendererManager : Node
         base._Ready();
         Instance = this;
         
-        var queueName = "J2nr981r_+YmKjedg+Z926erBDoCxVKyDZ3GHddE3Xc=";
+        var queueName = "aJ0_u6v4+8f_xFKBzVnJqd92vnzn5_RRa0OBeH_fq64=";
         var queueCapacity = 8388608;
 
         /*
@@ -89,7 +89,7 @@ public partial class RendererManager : Node
             _frameData = null;
         }
         
-        DebugDraw();
+        //DebugDraw();
     }
     private void HandleFrameUpdate(FrameSubmitData submitData)
     {

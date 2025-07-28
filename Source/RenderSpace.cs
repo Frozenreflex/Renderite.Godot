@@ -205,8 +205,9 @@ public partial class RenderSpace : Node3D
                 var bones = new int[boneAssignment.boneCount];
                 for (var i = 0; i < bones.Length; i++) bones[i] = boneIndices[boneIndex++];
 
-                foreach (var bone in mesh.TrackedBones) bone.Cleanup();
+                if (mesh.TrackedBones is not null) foreach (var bone in mesh.TrackedBones) bone.Cleanup();
                 mesh.TrackedBones = bones.Select((bone, index) => new SkinnedMeshInstanceManager.Bone(Nodes.ElementAtOrDefault(bone), index, mesh)).ToArray();
+                mesh.UpdateAllTransforms();
             }
         }
         if (!update.blendshapeUpdateBatches.IsEmpty)
@@ -297,7 +298,7 @@ public partial class RenderSpace : Node3D
                 var node = Nodes[addition];
                 if (!IsInstanceValid(node)) throw new Exception();
                 var instance = new T();
-                instance.Initialize(node, listen);
+                instance.Initialize(node);
                 list.Add(instance);
             }
         }

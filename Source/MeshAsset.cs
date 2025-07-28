@@ -67,8 +67,14 @@ public class MeshAsset
             var usesUV5 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV5);
             var usesUV6 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV6);
             var usesUV7 = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.UV7);
-            var usesBoneWeights = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneWeights);
-            var usesBoneIndices = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneIndicies);
+            var usesBones = boneWeightCount > 0;
+
+            var weightsPerVertex = usesBones && vertCount > 0 ? boneWeightCount / vertCount : 0;
+            //var usesBoneWeights = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneWeights);
+            //var usesBoneIndices = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneIndicies);
+            
+            //GD.Print($"vertCount {vertCount} boneWeightCount {boneWeightCount} boneCount {boneCount}");
+            //GD.Print($"---\npos: {usesPosition} normal: {usesNormal} tangent: {usesTangent} color: {usesColor}\nuv0: {usesUV0} uv1: {usesUV1} uv2: {usesUV2} uv3: {usesUV3} uv4: {usesUV4} uv5: {usesUV5} uv6: {usesUV6} uv7 {usesUV7}\nweights: {usesBoneWeights} indices: {usesBoneIndices}");
 
             var positionList = new List<Vector3>(usesPosition ? vertCount : 0);
             var normalList = new List<Vector3>(usesNormal ? vertCount : 0);
@@ -84,10 +90,10 @@ public class MeshAsset
             var uv7List = new List<Vector2>(usesUV7 ? vertCount : 0);
             List<Vector2>[] uvLists = [uv0List, uv1List, uv2List, uv3List, uv4List, uv5List, uv6List, uv7List];
 
-            var weightList = new List<float>(usesBoneWeights ? vertCount * 8 : 0);
-            var boneIndexList = new List<int>(usesBoneIndices ? vertCount * 8 : 0);
+            var weightList = new List<float>(usesBones ? vertCount * 8 : 0);
+            var boneIndexList = new List<int>(usesBones ? vertCount * 8 : 0);
 
-            var use8Bones = false;
+            var use8Bones = weightsPerVertex > 4;
 
             var vertexActions = new List<Action>();
 
@@ -229,6 +235,7 @@ public class MeshAsset
                         else vertexActions.Add(() => list.Add(Vector2.Zero));
                         break;
                     }
+                    /*
                     case VertexAttributeType.BoneWeights:
                     {
                         if (dimension > 4) use8Bones = true;
@@ -310,6 +317,7 @@ public class MeshAsset
                         }
                         break;
                     }
+                    */
                 }
                 if (used > size) throw new Exception($"Used bytes are larger than actual size. Used: {used} Size: {size}");
                 if (used < size)
@@ -335,6 +343,18 @@ public class MeshAsset
             for (var i = 0; i < vertCount; i++)
                 foreach (var action in vertexActions)
                     action.Invoke();
+
+            if (usesBones)
+            {
+                var weightBuffer = meshBuffer.GetBoneWeightsBuffer();
+                var count = use8Bones ? 8 : 4;
+                for (var i = 0; i < weightBuffer.Length; i += weightsPerVertex)
+                {
+                    var selection = weightBuffer.Slice(i, count).ToArray();
+                    weightList.AddRange(selection.Select(j => j.weight));
+                    boneIndexList.AddRange(selection.Select(j => j.boneIndex));
+                }
+            }
 
             vertReader.Dispose();
             vertexMem.Dispose();
@@ -370,25 +390,46 @@ public class MeshAsset
             var baseArray = new Array();
             baseArray.Resize((int)Mesh.ArrayType.Max);
 
-            if (usesPosition) baseArray[(int)Mesh.ArrayType.Vertex] = positionList.ToArray();
-            if (usesNormal) baseArray[(int)Mesh.ArrayType.Normal] = normalList.ToArray();
-            if (usesTangent) baseArray[(int)Mesh.ArrayType.Tangent] = tangentList.SelectMany(i => new[] { i.X, i.Y, i.Z, i.W }).ToArray();
-            if (usesColor) baseArray[(int)Mesh.ArrayType.Color] = colorList.ToArray();
-            if (usesUV0) baseArray[(int)Mesh.ArrayType.TexUV] = uv0List.ToArray();
-            if (usesUV1) baseArray[(int)Mesh.ArrayType.TexUV2] = uv1List.ToArray();
-            //TODO: custom channels for other UVs
-            if (usesBoneIndices) baseArray[(int)Mesh.ArrayType.Bones] = boneIndexList.ToArray();
-            if (usesBoneWeights) baseArray[(int)Mesh.ArrayType.Weights] = weightList.ToArray();
-
             var form = RenderingServer.ArrayFormat.FlagFormatCurrentVersion;
-            if (usesPosition) form |= RenderingServer.ArrayFormat.FormatVertex;
-            if (usesNormal) form |= RenderingServer.ArrayFormat.FormatNormal;
-            if (usesTangent) form |= RenderingServer.ArrayFormat.FormatTangent;
-            if (usesColor) form |= RenderingServer.ArrayFormat.FormatColor;
-            if (usesUV0) form |= RenderingServer.ArrayFormat.FormatTexUV;
-            if (usesUV1) form |= RenderingServer.ArrayFormat.FormatTexUV2;
-            if (usesBoneIndices && usesBoneWeights) form |= RenderingServer.ArrayFormat.FormatBones;
-            if (use8Bones) form |= RenderingServer.ArrayFormat.FlagUse8BoneWeights;
+            
+            if (usesPosition)
+            {
+                form |= RenderingServer.ArrayFormat.FormatVertex;
+                baseArray[(int)Mesh.ArrayType.Vertex] = positionList.ToArray();
+            }
+            if (usesNormal)
+            {
+                form |= RenderingServer.ArrayFormat.FormatNormal;
+                baseArray[(int)Mesh.ArrayType.Normal] = normalList.ToArray();
+            }
+            if (usesTangent)
+            {
+                form |= RenderingServer.ArrayFormat.FormatTangent;
+                baseArray[(int)Mesh.ArrayType.Tangent] = tangentList.SelectMany(i => new[] { i.X, i.Y, i.Z, i.W }).ToArray();
+            }
+            if (usesColor)
+            {
+                form |= RenderingServer.ArrayFormat.FormatColor;
+                baseArray[(int)Mesh.ArrayType.Color] = colorList.ToArray();
+            }
+            if (usesUV0)
+            {
+                form |= RenderingServer.ArrayFormat.FormatTexUV;
+                baseArray[(int)Mesh.ArrayType.TexUV] = uv0List.ToArray();
+            }
+            if (usesUV1)
+            {
+                form |= RenderingServer.ArrayFormat.FormatTexUV2;
+                baseArray[(int)Mesh.ArrayType.TexUV2] = uv1List.ToArray();
+            }
+            //TODO: custom channels for other UVs
+            if (usesBones)
+            {
+                form |= RenderingServer.ArrayFormat.FormatBones;
+                baseArray[(int)Mesh.ArrayType.Bones] = boneIndexList.ToArray();
+                baseArray[(int)Mesh.ArrayType.Weights] = weightList.ToArray();
+                if (use8Bones) form |= RenderingServer.ArrayFormat.FlagUse8BoneWeights;
+            }
 
             //TODO blendshapes
 
@@ -405,6 +446,8 @@ public class MeshAsset
             var bindPoses = meshBuffer.GetBindPosesBuffer<RenderMatrix4x4>();
             Skin = new Transform3D[bindPoses.Length];
             for (var i = 0; i < bindPoses.Length; i++) Skin[i] = bindPoses[i].ToGodot().AffineInverse(); //TODO
+            
+            RenderingServer.MeshSetCustomAabb(AssetID, meshUploadData.bounds.ToGodot());
 
             MeshChanged.Invoke();
         }
