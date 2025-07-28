@@ -73,11 +73,11 @@ public class AssetManager
                 }
                 mesh.Upload(meshUploadData);
 
-                /*
-                var result = new MeshUploadResult();
-                result.assetId = index;
-                result.instanceChanged = true;
-                */
+                RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MeshUploadResult
+                {
+                    assetId = index,
+                    instanceChanged = true
+                });
                 
                 break;
             }

@@ -18,8 +18,8 @@ public partial class RendererManager : Node
     private bool _initFinalized;
 
     public SharedMemoryAccessor SharedMemory { get; private set; }
-    private MessagingManager _primaryMessagingManager;
-    private MessagingManager _backgroundMessagingManager;
+    public MessagingManager PrimaryMessagingManager;
+    public MessagingManager BackgroundMessagingManager;
 
     public int LastFrameIndex { get; private set; } = -1;
     private volatile FrameSubmitData _frameData;
@@ -54,16 +54,16 @@ public partial class RendererManager : Node
         */
         
         GD.Print($"Connecting to {queueName} (capacity: {queueCapacity})");
-        _primaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
-        _primaryMessagingManager.CommandHandler = HandleRenderCommand;
-        _primaryMessagingManager.FailureHandler = HandleMessagingFailure;
-        _primaryMessagingManager.WarningHandler = GD.Print;
-        _primaryMessagingManager.Connect(queueName + "Primary", isAuthority: false, queueCapacity);
-        _backgroundMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
-        _backgroundMessagingManager.CommandHandler = HandleRenderCommand;
-        _backgroundMessagingManager.FailureHandler = HandleMessagingFailure;
-        _backgroundMessagingManager.WarningHandler = GD.Print;
-        _backgroundMessagingManager.Connect(queueName + "Background", isAuthority: false, queueCapacity);
+        PrimaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
+        PrimaryMessagingManager.CommandHandler = HandleRenderCommand;
+        PrimaryMessagingManager.FailureHandler = HandleMessagingFailure;
+        PrimaryMessagingManager.WarningHandler = GD.Print;
+        PrimaryMessagingManager.Connect(queueName + "Primary", isAuthority: false, queueCapacity);
+        BackgroundMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
+        BackgroundMessagingManager.CommandHandler = HandleRenderCommand;
+        BackgroundMessagingManager.FailureHandler = HandleMessagingFailure;
+        BackgroundMessagingManager.WarningHandler = GD.Print;
+        BackgroundMessagingManager.Connect(queueName + "Background", isAuthority: false, queueCapacity);
         GD.Print("Connected!");
     }
     public override void _Process(double delta)
@@ -76,7 +76,7 @@ public partial class RendererManager : Node
         {
             lastFrameIndex = LastFrameIndex,
         };
-        _primaryMessagingManager.SendCommand(frameStartData);
+        PrimaryMessagingManager.SendCommand(frameStartData);
 
         while (_frameData == null)
         {
@@ -150,10 +150,12 @@ public partial class RendererManager : Node
             rendererInitResult.stereoRenderingMode = "MultiPass";
             rendererInitResult.maxTextureSize = 16384;
             rendererInitResult.isGPUTexturePOTByteAligned = true;
-            rendererInitResult.supportedTextureFormats = new List<TextureFormat>();
-            rendererInitResult.supportedTextureFormats.Add(TextureFormat.RGB24);
-            rendererInitResult.supportedTextureFormats.Add(TextureFormat.RGBA32);
-            _primaryMessagingManager.SendCommand(rendererInitResult);
+            rendererInitResult.supportedTextureFormats =
+            [
+                TextureFormat.RGB24,
+                TextureFormat.RGBA32,
+            ];
+            PrimaryMessagingManager.SendCommand(rendererInitResult);
         }
         else
         {
