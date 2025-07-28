@@ -445,7 +445,7 @@ public class MeshAsset
 
             var bindPoses = meshBuffer.GetBindPosesBuffer<RenderMatrix4x4>();
             Skin = new Transform3D[bindPoses.Length];
-            for (var i = 0; i < bindPoses.Length; i++) Skin[i] = bindPoses[i].ToGodot().AffineInverse(); //TODO
+            for (var i = 0; i < bindPoses.Length; i++) Skin[i] = bindPoses[i].ToGodot();
             
             RenderingServer.MeshSetCustomAabb(AssetID, meshUploadData.bounds.ToGodot());
 
