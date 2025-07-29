@@ -42,7 +42,7 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
 
     public void UpdateAllTransforms()
     {
-        if (TrackedBones is null || Mesh is null) return;
+        if (TrackedBones is null || Mesh is null || SkeletonRid == NullRid) return;
         RenderingServer.SkeletonAllocateData(SkeletonRid, Mesh.Skin.Length);
         if (InstanceRid != NullRid && Mesh.AssetID != NullRid)
             foreach (var bone in TrackedBones)

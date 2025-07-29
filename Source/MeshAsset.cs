@@ -14,6 +14,7 @@ public class MeshAsset
 {
     public Rid AssetID { get; private set; }
     public Transform3D[] Skin = [];
+    public int BlendShapeCount { get; private set; } = 0; //TODO
 
     public event Action MeshChanged = () => { };
 

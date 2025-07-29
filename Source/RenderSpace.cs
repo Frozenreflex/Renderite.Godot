@@ -222,7 +222,7 @@ public partial class RenderSpace : Node3D
                 for (var i = 0; i < blendshapeUpdateBatch.blendshapeUpdateCount; i++)
                 {
                     var blend = blendshapeUpdates[updateIndex++];
-                    RenderingServer.InstanceSetBlendShapeWeight(mesh.InstanceRid, blend.blendshapeIndex, blend.weight);
+                    if (mesh.Mesh.BlendShapeCount > blend.blendshapeIndex) RenderingServer.InstanceSetBlendShapeWeight(mesh.InstanceRid, blend.blendshapeIndex, blend.weight);
                 }
             }
         }
