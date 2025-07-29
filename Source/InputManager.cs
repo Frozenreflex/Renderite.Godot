@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Godot;
 using Renderite.Godot.Source.Helpers;
 using Renderite.Shared;
@@ -8,7 +9,8 @@ namespace Renderite.Godot.Source;
 public partial class InputManager : Node
 {
     public static InputManager Instance;
-    private HashSet<Shared.Key> _heldKeys = new HashSet<Shared.Key>();
+    private HashSet<Shared.Key> _heldKeys = new();
+    private StringBuilder _typeDelta = new();
 
     public override void _Ready()
     {
@@ -21,19 +23,29 @@ public partial class InputManager : Node
         if (@event is InputEventKey keyEvent)
         {
             if (keyEvent.Pressed)
+            {
                 _heldKeys.Add(keyEvent.Keycode.ToRenderite(keyEvent.Location));
+                // TODO: Verify this, I'm pretty sure it's gonna be wrong compared to what Unity does
+                // Also thanks for the vague docs again
+                _typeDelta.Append((char)keyEvent.Unicode);
+            }
             else
                 _heldKeys.Remove(keyEvent.Keycode.ToRenderite(keyEvent.Location));
         }
     }
 
-    public InputState GetInputState() => new()
+    public InputState GetInputState()
     {
-        keyboard = new KeyboardState
+        var typeDelta = _typeDelta.ToString();
+        _typeDelta.Clear();
+        return new InputState
         {
-            heldKeys = _heldKeys,
-            // TODO: typeDelta (if I'm thinking about this correctly it's used for actual typing)
-        }
-        // TODO: mouse and window state
-    };
+            keyboard = new KeyboardState
+            {
+                heldKeys = _heldKeys,
+                typeDelta = typeDelta,
+            }
+            // TODO: mouse and window state
+        };
+    }
 }
