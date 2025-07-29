@@ -70,10 +70,14 @@ public static class TransformHelpers
     {
         //also taken from https://github.com/V-Sekai/unidot_importer/blob/main/object_adapter.gd#L503
         var baseTransform = new Transform3D(
-            new Vector3(matrix.m00, matrix.m10, matrix.m20), 
-            new Vector3(matrix.m01, matrix.m11, matrix.m21), 
-            new Vector3(matrix.m02, matrix.m12, matrix.m22), 
+            new Vector3(matrix.m00, matrix.m10, matrix.m20),
+            new Vector3(matrix.m01, matrix.m11, matrix.m21),
+            new Vector3(matrix.m02, matrix.m12, matrix.m22),
             new Vector3(matrix.m03, matrix.m13, matrix.m23));
         return (FlipXInverse * baseTransform) * Transform3D.FlipX;
     }
+    /// <summary>
+    /// Converts a Godot Vector2i to a RenderVector2i
+    /// </summary>
+    public static RenderVector2i ToRenderite(this Vector2I vec) => new RenderVector2i { x = vec.X, y = vec.Y };
 }

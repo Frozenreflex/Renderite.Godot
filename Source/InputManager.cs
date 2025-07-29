@@ -38,12 +38,19 @@ public partial class InputManager : Node
     {
         var typeDelta = _typeDelta.ToString();
         _typeDelta.Clear();
+
         return new InputState
         {
             keyboard = new KeyboardState
             {
                 heldKeys = _heldKeys,
                 typeDelta = typeDelta,
+            },
+            window = new WindowState
+            {
+                isWindowFocused = GetWindow().HasFocus(),
+                windowResolution = GetWindow().Size.ToRenderite(),
+                // TODO: drag and drop
             }
             // TODO: mouse and window state
         };
