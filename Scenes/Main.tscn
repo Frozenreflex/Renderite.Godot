@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://choup10xc4k3a"]
+[gd_scene load_steps=7 format=3 uid="uid://choup10xc4k3a"]
 
 [ext_resource type="Script" uid="uid://ddxchka2t5s7j" path="res://Source/Main.cs" id="1_r150o"]
 [ext_resource type="Script" uid="uid://bq0wwhwobck75" path="res://Source/RendererManager.cs" id="2_idj7w"]
+[ext_resource type="Script" uid="uid://k2uesmnqrsfd" path="res://Source/InputManager.cs" id="3_kln2b"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_idj7w"]
 
@@ -22,3 +23,6 @@ script = ExtResource("2_idj7w")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_rgh2o")
+
+[node name="InputManager" type="Node" parent="."]
+script = ExtResource("3_kln2b")

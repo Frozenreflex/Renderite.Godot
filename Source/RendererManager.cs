@@ -75,6 +75,7 @@ public partial class RendererManager : Node
         var frameStartData = new FrameStartData
         {
             lastFrameIndex = LastFrameIndex,
+            inputs = InputManager.Instance.GetInputState()
         };
         PrimaryMessagingManager.SendCommand(frameStartData);
 
