@@ -87,20 +87,23 @@ vec4 _SampleSTTexture(sampler2D nearest, sampler2D anisotropic, sampler2D linear
     return _SampleTexture(nearest, anisotropic, linear, TransformTex(uv, st), flags);
 }
 
-#define AlbedoSTTexture2D(T) \
+#define STData(T) \
+uniform vec4 _##T##_ST = vec4(1.0,1.0,0.0,0.0);
+
+#define ColorTexture2D(T) \
 \
 uniform sampler2D _##T##_Nearest : source_color, filter_nearest, repeat_enable; \
 uniform sampler2D _##T##_Linear : source_color, filter_linear, repeat_enable; \
 uniform sampler2D _##T##_Anisotropic : source_color, filter_linear_mipmap_anisotropic, repeat_enable; \
-\
-uniform int _##T##_Flags; \
-uniform vec4 _##T##_ST = vec4(1.0,1.0,0.0,0.0);
+uniform int _##T##_Flags;
 
-#define MapSTTexture2D(T) \
+#define MapTexture2D(T) \
 \
 uniform sampler2D _##T##_Nearest : filter_nearest, repeat_enable; \
 uniform sampler2D _##T##_Linear : filter_linear, repeat_enable; \
-uniform sampler2D _##T##_Anisotropic : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D _##T##_Anisotropic : filter_linear_mipmap_anisotropic, repeat_enable; \
+uniform int _##T##_Flags;
 
 #define SampleSTTexture(T, uv) _SampleSTTexture(_##T##_Nearest, _##T##_Anisotropic, _##T##_Linear, uv##, _##T##_Flags, _##T##_ST)
-#define SampleSTMapTexture(Depend, T, uv) _SampleSTTexture(_##Depend##_Nearest, _##Depend##_Anisotropic, _##Depend##_Linear, uv##, _##T##_Flags, _##T##_ST)
+#define SampleSTTextureData(T, data, uv) _SampleSTTexture(_##T##_Nearest, _##T##_Anisotropic, _##T##_Linear, uv##, _##T##_Flags, _##data##_ST)
+#define SampleTexture(T, uv) _SampleTexture(_##T##_Nearest, _##T##_Anisotropic, _##T##_Linear, uv##, _##T##_Flags)

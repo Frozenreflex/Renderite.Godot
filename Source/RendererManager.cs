@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Renderite.Godot.Source.Helpers;
 using Renderite.Shared;
@@ -29,7 +30,7 @@ public partial class RendererManager : Node
         base._Ready();
         Instance = this;
         
-        var queueName = "aJ0_u6v4+8f_xFKBzVnJqd92vnzn5_RRa0OBeH_fq64=";
+        var queueName = "rtvkZh2F+tbdGm_Gq9CN5WPb4b2GuUb1WNPXAkobuto=";
         var queueCapacity = 8388608;
 
         /*
@@ -151,11 +152,14 @@ public partial class RendererManager : Node
             rendererInitResult.stereoRenderingMode = "MultiPass";
             rendererInitResult.maxTextureSize = 16384;
             rendererInitResult.isGPUTexturePOTByteAligned = true;
+            rendererInitResult.supportedTextureFormats = Enum.GetValues<TextureFormat>().Where(i => i.Supported()).ToList();
+            /*
             rendererInitResult.supportedTextureFormats =
             [
                 TextureFormat.RGB24,
                 TextureFormat.RGBA32,
             ];
+            */
             PrimaryMessagingManager.SendCommand(rendererInitResult);
         }
         else

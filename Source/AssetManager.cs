@@ -14,7 +14,7 @@ public class AssetManager
 {
     public class AssetContainer
     {
-        public global::Godot.Collections.Dictionary<int, Rid> Dictionary = new();
+        public Dictionary<int, Rid> Dictionary = new();
         private Func<Rid> _createFunc;
 
         public AssetContainer(Func<Rid> create)
@@ -37,7 +37,7 @@ public class AssetManager
 
     public MaterialManager MaterialManager = new();
     public Dictionary<int, MeshAsset> Meshes = new();
-    //public AssetContainer Texture2Ds = new();
+    public TextureManager TextureManager = new();
     //public AssetContainer Texture3Ds = new();
     //public AssetContainer Cubemaps = new();
     //public AssetContainer RenderTextures = new();
@@ -76,7 +76,7 @@ public class AssetManager
                 RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MeshUploadResult
                 {
                     assetId = index,
-                    instanceChanged = true
+                    instanceChanged = true,
                 });
                 
                 break;
@@ -96,6 +96,36 @@ public class AssetManager
             case ShaderUnload shaderUnload:
             {
                 MaterialManager.Handle(shaderUnload);
+                break;
+            }
+            case MaterialPropertyIdRequest materialPropertyIdRequest:
+            {
+                MaterialManager.Handle(materialPropertyIdRequest);
+                break;
+            }
+            case MaterialsUpdateBatch materialsUpdateBatch:
+            {
+                MaterialManager.Handle(materialsUpdateBatch);
+                break;
+            }
+            case SetTexture2DFormat setTexture2DFormat:
+            {
+                TextureManager.Handle(setTexture2DFormat);
+                break;
+            }
+            case SetTexture2DProperties setTexture2DProperties:
+            {
+                TextureManager.Handle(setTexture2DProperties);
+                break;
+            }
+            case SetTexture2DData setTexture2DData:
+            {
+                TextureManager.Handle(setTexture2DData);
+                break;
+            }
+            case UnloadTexture2D unloadTexture2D:
+            {
+                TextureManager.Handle(unloadTexture2D);
                 break;
             }
         }

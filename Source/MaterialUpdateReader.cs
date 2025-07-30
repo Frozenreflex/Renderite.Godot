@@ -17,7 +17,7 @@ public ref struct MaterialUpdateReader(MaterialsUpdateBatch batch, BitSpan insta
     private Span<int> _intBuffer;
     private Span<float> _floatBuffer;
     private Span<Vector4> _vectorBuffer;
-    private Span<RenderMatrix4x4> _matrixBuffer;
+    private Span<Projection> _matrixBuffer;
     private int _updateBufferIndex;
     private int _intBufferIndex;
     private int _floatBufferIndex;
@@ -43,7 +43,7 @@ public ref struct MaterialUpdateReader(MaterialsUpdateBatch batch, BitSpan insta
 
     public Vector4 ReadVector() => ReadValue(ref _vectorBufferIndex, ref _vectorIndex, ref _vectorBuffer, batch.float4Buffers);
 
-    public RenderMatrix4x4 ReadMatrix() => ReadValue(ref _matrixBufferIndex, ref _matrixIndex, ref _matrixBuffer, batch.matrixBuffers);
+    public Projection ReadMatrix() => ReadValue(ref _matrixBufferIndex, ref _matrixIndex, ref _matrixBuffer, batch.matrixBuffers);
 
     public unsafe Span<float> AccessFloatArray() => AccessArray(ref _floatBufferIndex, ref _floatIndex, ref _floatBuffer, batch.floatBuffers);
 
