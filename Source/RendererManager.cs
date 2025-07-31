@@ -5,6 +5,7 @@ using Godot;
 using Renderite.Godot.Source.Helpers;
 using Renderite.Shared;
 using Renderite.Godot.Source.SharedMemory;
+using System.IO;
 
 namespace Renderite.Godot.Source;
 
@@ -29,13 +30,12 @@ public partial class RendererManager : Node
     {
         base._Ready();
         Instance = this;
-        
-        var queueName = "rtvkZh2F+tbdGm_Gq9CN5WPb4b2GuUb1WNPXAkobuto=";
+
+        string queueName = null;
         var queueCapacity = 8388608;
 
-        /*
         var args = OS.GetCmdlineUserArgs();
-         
+
         for (var i = 0; i < args.Length; i++)
         {
             var arg = args[i].ToLower();
@@ -52,7 +52,30 @@ public partial class RendererManager : Node
                 queueCapacity = int.Parse(next);
             }
         }
-        */
+
+        if (queueName is null)
+        {
+            const string shmPath = "/dev/shm";
+            const string prefix = "sem.ct.ip.";
+            const string suffix = "PrimaryA";
+
+            var files = Directory.EnumerateFiles(shmPath)
+                .Where(f => Path.GetFileName(f).StartsWith(prefix) && f.EndsWith(suffix))
+                .OrderByDescending(f => File.GetLastWriteTime(f))
+                .ToList();
+
+            if (files.Count > 0)
+            {
+                queueName = Path.GetFileName(files[0])[prefix.Length..^suffix.Length];
+                GD.Print($"Detected queueName from file: {files[0]}");
+            }
+            else
+            {
+                GD.PrintErr("No queue name specified!");
+                GetTree().Quit();
+                return;
+            }
+        }
 
         GD.Print($"Connecting to {queueName} (capacity: {queueCapacity})");
         PrimaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
