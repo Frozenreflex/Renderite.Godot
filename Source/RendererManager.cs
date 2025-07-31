@@ -194,6 +194,7 @@ public partial class RendererManager : Node
             {
                 case RendererInitFinalizeData initFinalize:
                     _initFinalized = true;
+                    PackerMemoryPool.Instance.Return(initFinalize);
                     GD.Print("Init finalized!");
                     break;
                 case FrameSubmitData submitData:

@@ -59,75 +59,85 @@ public class AssetManager
         {
             //TODO: does frooxengine properly ensure that referenced objects are unreferenced before sending unload commands, or do we need to do so ourselves?
             case RendererShutdown:
-            {
-                Main.Instance.GetTree().Quit(); //todo: do we need to do more than this?
-                return;
-            }
-            case MeshUploadData meshUploadData:
-            {
-                var index = meshUploadData.assetId;
-                if (!Meshes.TryGetValue(index, out var mesh))
                 {
-                    mesh = MeshAsset.Create();
-                    Meshes[index] = mesh;
+                    Main.Instance.GetTree().Quit(); //todo: do we need to do more than this?
+                    return;
                 }
-                mesh.Upload(meshUploadData);
-
-                RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MeshUploadResult
+            case MeshUploadData meshUploadData:
                 {
-                    assetId = index,
-                    instanceChanged = true,
-                });
-                
-                break;
-            }
+                    var index = meshUploadData.assetId;
+                    if (!Meshes.TryGetValue(index, out var mesh))
+                    {
+                        mesh = MeshAsset.Create();
+                        Meshes[index] = mesh;
+                    }
+                    mesh.Upload(meshUploadData);
+
+                    RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MeshUploadResult
+                    {
+                        assetId = index,
+                        instanceChanged = true,
+                    });
+
+                    PackerMemoryPool.Instance.Return(meshUploadData);
+                    break;
+                }
             case MeshUnload meshUnload:
-            {
-                var index = meshUnload.assetId;
-                if (Meshes.TryGetValue(index, out var mesh)) mesh.Cleanup();
-                Meshes.Remove(index);
-                break;
-            }
+                {
+                    var index = meshUnload.assetId;
+                    if (Meshes.TryGetValue(index, out var mesh)) mesh.Cleanup();
+                    Meshes.Remove(index);
+                    PackerMemoryPool.Instance.Return(meshUnload);
+                    break;
+                }
             case ShaderUpload shaderUpload:
-            {
-                MaterialManager.Handle(shaderUpload);
-                break;
-            }
+                {
+                    MaterialManager.Handle(shaderUpload);
+                    PackerMemoryPool.Instance.Return(shaderUpload);
+                    break;
+                }
             case ShaderUnload shaderUnload:
-            {
-                MaterialManager.Handle(shaderUnload);
-                break;
-            }
+                {
+                    MaterialManager.Handle(shaderUnload);
+                    PackerMemoryPool.Instance.Return(shaderUnload);
+                    break;
+                }
             case MaterialPropertyIdRequest materialPropertyIdRequest:
-            {
-                MaterialManager.Handle(materialPropertyIdRequest);
-                break;
-            }
+                {
+                    MaterialManager.Handle(materialPropertyIdRequest);
+                    PackerMemoryPool.Instance.Return(materialPropertyIdRequest);
+                    break;
+                }
             case MaterialsUpdateBatch materialsUpdateBatch:
-            {
-                MaterialManager.Handle(materialsUpdateBatch);
-                break;
-            }
+                {
+                    MaterialManager.Handle(materialsUpdateBatch);
+                    PackerMemoryPool.Instance.Return(materialsUpdateBatch);
+                    break;
+                }
             case SetTexture2DFormat setTexture2DFormat:
-            {
-                TextureManager.Handle(setTexture2DFormat);
-                break;
-            }
+                {
+                    TextureManager.Handle(setTexture2DFormat);
+                    PackerMemoryPool.Instance.Return(setTexture2DFormat);
+                    break;
+                }
             case SetTexture2DProperties setTexture2DProperties:
-            {
-                TextureManager.Handle(setTexture2DProperties);
-                break;
-            }
+                {
+                    TextureManager.Handle(setTexture2DProperties);
+                    PackerMemoryPool.Instance.Return(setTexture2DProperties);
+                    break;
+                }
             case SetTexture2DData setTexture2DData:
-            {
-                TextureManager.Handle(setTexture2DData);
-                break;
-            }
+                {
+                    TextureManager.Handle(setTexture2DData);
+                    PackerMemoryPool.Instance.Return(setTexture2DData);
+                    break;
+                }
             case UnloadTexture2D unloadTexture2D:
-            {
-                TextureManager.Handle(unloadTexture2D);
-                break;
-            }
+                {
+                    TextureManager.Handle(unloadTexture2D);
+                    PackerMemoryPool.Instance.Return(unloadTexture2D);
+                    break;
+                }
         }
     }
 }
