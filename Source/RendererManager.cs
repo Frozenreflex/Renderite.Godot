@@ -53,7 +53,7 @@ public partial class RendererManager : Node
             }
         }
         */
-        
+
         GD.Print($"Connecting to {queueName} (capacity: {queueCapacity})");
         PrimaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
         PrimaryMessagingManager.CommandHandler = HandleRenderCommand;
@@ -90,7 +90,7 @@ public partial class RendererManager : Node
             PackerMemoryPool.Instance.Return(_frameData);
             _frameData = null;
         }
-        
+
         //DebugDraw();
     }
     private void HandleFrameUpdate(FrameSubmitData submitData)
@@ -119,6 +119,9 @@ public partial class RendererManager : Node
                     ? renderSpace
                     : throw new Exception("Multiple spaces are set to active");
         }
+
+        if (submitData.outputState is not null)
+            InputManager.Instance.Handle(submitData.outputState);
         /*
         HeadOutput headOutput = this.UpdateVR_Active(submitData.vrActive);
         if ((UnityEngine.Object) renderSpace1 != (UnityEngine.Object) null)

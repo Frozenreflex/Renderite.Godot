@@ -77,7 +77,15 @@ public static class TransformHelpers
         return (FlipXInverse * baseTransform) * Transform3D.FlipX;
     }
     /// <summary>
-    /// Converts a Godot Vector2i to a RenderVector2i
+    /// Converts a RenderVector2i to a Godot Vector2I
+    /// </summary>
+    public static Vector2I ToGodot(this RenderVector2i vec) => new Vector2I { X = vec.x, Y = vec.y };
+    /// <summary>
+    /// Converts a Godot Vector2I to a RenderVector2i
     /// </summary>
     public static RenderVector2i ToRenderite(this Vector2I vec) => new RenderVector2i { x = vec.X, y = vec.Y };
+    /// <summary>
+    /// Converts a Godot Vector2 to a RenderVector2
+    /// </summary>
+    public static RenderVector2 ToRenderite(this Vector2 vec) => new RenderVector2 { x = vec.X, y = vec.Y };
 }
