@@ -106,7 +106,11 @@ public partial class RenderSpace : Node3D
             {
                 if (parentUpdate.transformId < 0) break;
                 var node = Nodes[parentUpdate.transformId];
-                node.Reparent(Nodes[parentUpdate.newParentId], false);
+
+                var parent = node.GetParent();
+                if (parent is not null)
+                    parent.RemoveChild(node);
+                Nodes[parentUpdate.newParentId].AddChild(node);
                 node.InvokeParentChanged();
             }
             //
@@ -160,29 +164,29 @@ public partial class RenderSpace : Node3D
             switch (type)
             {
                 case RenderingServer.LightType.Directional:
-                {
-                    break;
-                }
-                case RenderingServer.LightType.Omni:
-                {
-                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 1f);
-                    break;
-                }
-                case RenderingServer.LightType.Spot:
-                {
-                    //TODO
-                    /*
-                    if (light.AssetIndex != state.cookieTextureAssetId)
                     {
-                        light.AssetIndex = state.cookieTextureAssetId;
-                        RenderingServer.LightSetProjector(lightRid, cookieRid);
+                        break;
                     }
-                    */
-                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 0.5f);
-                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAttenuation, 0.333333333f);
-                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAngle, state.spotAngle * 0.5f);
-                    break;
-                }
+                case RenderingServer.LightType.Omni:
+                    {
+                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 1f);
+                        break;
+                    }
+                case RenderingServer.LightType.Spot:
+                    {
+                        //TODO
+                        /*
+                        if (light.AssetIndex != state.cookieTextureAssetId)
+                        {
+                            light.AssetIndex = state.cookieTextureAssetId;
+                            RenderingServer.LightSetProjector(lightRid, cookieRid);
+                        }
+                        */
+                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 0.5f);
+                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAttenuation, 0.333333333f);
+                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAngle, state.spotAngle * 0.5f);
+                        break;
+                    }
             }
         }
     }
