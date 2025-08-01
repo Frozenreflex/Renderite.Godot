@@ -96,17 +96,19 @@ public class TextureManager
         var size = ImageHelpers.GetDstImageSize(entry.Width, entry.Height, entry.Format.ToGodotAll(), out _, 0);
         var slice = SharedMemoryAccessor.Instance.AccessSlice(command.data);
         Span<byte> data;
-        if (slice.SizeBytes >= size) data = slice.Data.Slice(0, size);
+        var saveDebug = true;
+        if (slice.RawData.Length >= size) data = slice.RawData[..size];
         else
         {
             //TODO
-            GD.Print("image was too small, given null array");
+            GD.Print($"Format: {entry.Format} Size: {entry.Width}x{entry.Height} Expected: {size} Actual: {slice.RawData.Length}");
             data = new byte[size];
+            saveDebug = false;
         }
         var image = ImageHelpers.Create(entry.Width, entry.Height, false, entry.Format, data);
         //var image = Image.CreateFromData(entry.Width, entry.Height, /*entry.MipmapCount > 0*/ false, entry.Format.ToGodot(), SharedMemoryAccessor.Instance.AccessSlice(command.data).Data[..size]);
         
-        if (true) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
+        if (true && saveDebug) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
         
         var tempRid = RenderingServer.Texture2DCreate(image);
         RenderingServer.TextureReplace(entry.Rid, tempRid);

@@ -85,11 +85,12 @@ public class MaterialInstance
     public ShaderVariant Variant;
     public MaterialInstance() => MaterialRid = RenderingServer.MaterialCreate();
 
-    private void ChangeBaseShader(ShaderVariant value, ShaderVariant mask)
+    public void ChangeBaseShader(ShaderVariant value, ShaderVariant mask)
     {
         var oldVariant = Variant;
         var newVariant = (Variant & (~mask)) & (value & mask);
         if (oldVariant == newVariant) return;
+        GD.Print($"Changing shader variant. Old: {oldVariant:X} New: {newVariant:X}");
         Variant = newVariant;
         Shader.Return(Variant);
         RenderingServer.MaterialSetShader(MaterialRid, Shader.GetShader(Variant));

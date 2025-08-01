@@ -111,9 +111,10 @@ public class AssetManager
             case MaterialsUpdateBatch materialsUpdateBatch:
                 {
                     MaterialManager.Handle(materialsUpdateBatch);
-                    PackerMemoryPool.Instance.Return(materialsUpdateBatch);
+                    //PackerMemoryPool.Instance.Return(materialsUpdateBatch);
                     break;
                 }
+            /*
             case SetTexture2DFormat setTexture2DFormat:
                 {
                     TextureManager.Handle(setTexture2DFormat);
@@ -138,6 +139,7 @@ public class AssetManager
                     PackerMemoryPool.Instance.Return(unloadTexture2D);
                     break;
                 }
+                */
         }
     }
 }

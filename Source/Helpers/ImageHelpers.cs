@@ -81,7 +81,7 @@ public static class ImageHelpers
 
         var pixsize = GetFormatPixelSize(p_format);
         var pixshift = GetFormatPixelRShift(p_format);
-        var block = GetFormatPixelSize(p_format);
+        var block = GetFormatBlockSize(p_format);
         
         const int minw = 1, minh = 1;
 
@@ -121,9 +121,9 @@ public static class ImageHelpers
             Image.Format.Rgb8 => 3,
             Image.Format.Rgba8 or Image.Format.Rf or Image.Format.Rgh or Image.Format.Rgbe9995 => 4,
             Image.Format.Rgbh => 6,
+            Image.Format.Rgbah or Image.Format.Rgf => 8,
             Image.Format.Rgbf => 12,
             Image.Format.Rgbaf => 16,
-            Image.Format.Rgbah or Image.Format.Rgf => 8,
             _ => 0,
         };
     public static int GetFormatPixelRShift(Image.Format p_format) =>
@@ -133,4 +133,15 @@ public static class ImageHelpers
             Image.Format.Dxt1 or Image.Format.RgtcR or Image.Format.Etc or Image.Format.Etc2R11 or Image.Format.Etc2R11S or Image.Format.Etc2Rgba8 or Image.Format.Etc2Rgb8A1 => 1,
             _ => 0,
         };
+    public static int GetFormatBlockSize(Image.Format p_format)
+    {
+        return p_format switch
+        {
+            Image.Format.Dxt1 or Image.Format.Dxt3 or Image.Format.Dxt5 or Image.Format.RgtcR or Image.Format.RgtcRg or Image.Format.Etc or Image.Format.BptcRgba or Image.Format.BptcRgbf
+                or Image.Format.BptcRgbfu or Image.Format.Etc2R11 or Image.Format.Etc2R11S or Image.Format.Etc2Rg11 or Image.Format.Etc2Rg11S or Image.Format.Etc2Rgb8 or Image.Format.Etc2Rgba8
+                or Image.Format.Etc2Rgb8A1 or Image.Format.Etc2RaAsRg or Image.Format.Dxt5RaAsRg or Image.Format.Astc4X4 or Image.Format.Astc4X4Hdr => 4,
+            Image.Format.Astc8X8 or Image.Format.Astc8X8Hdr => 8,
+            _ => 1,
+        };
+    }
 }

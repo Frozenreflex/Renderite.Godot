@@ -263,7 +263,8 @@ public partial class RenderSpace : Node3D
                     for (var i = 0; i < meshState.materialCount; i++)
                     {
                         var matId = materials[materialsIndex++];
-                        //TODO: get and set materials
+                        var mat = RendererManager.Instance.AssetManager.MaterialManager.Materials.GetValueOrDefault(matId);
+                        RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
                     }
                     if (meshState.materialPropertyBlockCount >= 0)
                     {

@@ -15,6 +15,7 @@ public class MaterialManager
     [
         "_SrcBlend",
         "_DstBlend",
+        "_ZTest",
     ];
     
     public Dictionary<int, ShaderInstance> ShaderMap = new();
@@ -23,21 +24,19 @@ public class MaterialManager
     public void Handle(ShaderUpload command)
     {
         var shader = new ShaderInstance();
-        ShaderMap[command.assetId] = shader;
-        //TODO
-        GD.Print(command.file);
-        /*
-        if (File.Exists(command.file))
-        {
-            using var reader = new ZipReader();
-            reader.Open(command.file);
-            var meta = Json.ParseString(reader.ReadFile("metadata.json").GetStringFromUtf8()).AsGodotDictionary();
-            reader.Close();
-            var shaderName = meta["sourceFile"].AsGodotDictionary()["filename"].AsString();
-            GD.Print(shaderName);
-        }
-        */
         
+
+        var shaderName = command.file.Replace(".shader", "");
+
+        var path = $"res://Resources/Shaders/{shaderName}.gdshader";
+        if (ResourceLoader.Exists(path))
+        {
+            GD.Print($"Loading {path}");
+            var baseShader = ResourceLoader.Load<Shader>(path);
+            shader.BaseShader = baseShader.Code;
+        }
+        else GD.Print($"Unimplemented: {shaderName}");
+        ShaderMap[command.assetId] = shader;
     }
     public void Handle(ShaderUnload command) => ShaderMap.Remove(command.assetId);
     
@@ -60,10 +59,11 @@ public class MaterialManager
 
     public void Handle(MaterialsUpdateBatch command)
     {
+        GD.Print("Updating Material");
+        GD.Print($"Material update count: {command.materialUpdateCount}");
         var instanceChangedBuffer = new BitSpan(SharedMemoryAccessor.Instance.AccessData(command.instanceChangedBuffer));
         var reader = new MaterialUpdateReader(command, instanceChangedBuffer);
         /*
-        MaterialAsset target1 = (MaterialAsset) null;
         MaterialPropertyBlockAsset target2 = (MaterialPropertyBlockAsset) null;
         */
         MaterialInstance materialTarget = null;
@@ -75,7 +75,7 @@ public class MaterialManager
         {
             //TODO: WriteInstanceChanged scares me, i dont know if stuff will break if i don't update it properly
             var update = reader.ReadUpdate();
-            if (update.updateType == MaterialPropertyUpdateType.SelectTarget)
+            if (update.updateType is MaterialPropertyUpdateType.SelectTarget)
             {
                 if (updateCount == command.materialUpdateCount) isMaterialPropertyBlock = true;
                 updateCount++;
@@ -86,6 +86,7 @@ public class MaterialManager
                     instanceChanged = true;
                     //target2 = this.PropertyBlocks.GetAsset(update.propertyID);
                     //nullable1 = new bool?(target2.EnsureInstance());
+                    GD.Print($"Material Property Block Target set to {update.propertyID}");
                 }
                 else
                 {
@@ -96,24 +97,53 @@ public class MaterialManager
                         instanceChanged = true;
                     }
                     materialTarget = mat;
+                    GD.Print($"Material Target set to {update.propertyID}");
                 }
             }
             else if (isMaterialPropertyBlock)
             {
+                GD.Print($"Updating Material Property Blocks, {update.updateType}");
                 //TODO
                 instanceChanged = true;
                 //bool? nullable2 = nullable1;
                 //nullable1 = this.HandlePropertyBlockUpdate(ref reader, ref update, target2) ? new bool?(true) : nullable2;
+                switch (update.updateType)
+                {
+                    case MaterialPropertyUpdateType.SetFloat:
+                        reader.ReadFloat();
+                        break;
+                    case MaterialPropertyUpdateType.SetFloat4:
+                        reader.ReadVector();
+                        break;
+                    case MaterialPropertyUpdateType.SetFloat4x4:
+                        reader.ReadMatrix();
+                        break;
+                    case MaterialPropertyUpdateType.SetFloatArray:
+                        reader.AccessFloatArray();
+                        break;
+                    case MaterialPropertyUpdateType.SetFloat4Array:
+                        reader.AccessVectorArray();
+                        break;
+                    case MaterialPropertyUpdateType.SetTexture:
+                        reader.ReadInt();
+                        break;
+                }
             }
             else
             {
-                if (materialTarget is null) continue;
+                GD.Print("Updating Material Variables");
+                if (materialTarget is null)
+                {
+                    GD.Print("Material Target is empty!");
+                    continue;
+                }
                 var propertyId = update.propertyID;
                 switch (update.updateType)
                 {
                     case MaterialPropertyUpdateType.SetShader:
                     {
                         materialTarget.Shader = ShaderMap.GetValueOrDefault(propertyId);
+                        GD.Print($"Setting shader: {propertyId}");
                         break;
                     }
                     case MaterialPropertyUpdateType.SetRenderQueue:
@@ -148,8 +178,50 @@ public class MaterialManager
                                 materialTarget.DestinationBlendProp = value;
                                 break;
                             }
+                            //_ZTest
+                            case 2:
+                            {
+                                /*
+                                   Less,
+                                   Greater,
+                                   LessOrEqual,
+                                   GreaterOrEqual,
+                                   Equal,
+                                   NotEqual,
+                                   Always,
+                                 */
+                                //TODO: godot has 3 ztest modes, either it's default, which does what you expect, inverted, which draws behind other objects, and disabled, which always draws
+                                //Less and LessOrEqual are essentially the same, and can map to default
+                                //Greater and GreaterOrEqual can map to inverted
+                                //NotEqual and Always can convert to Disabled
+                                //what the fuck do i map equal to
+                                var mode = 0;
+                                var asInt = (int)value;
+                                mode = asInt switch
+                                {
+                                    1 => 1,
+                                    3 => 1,
+                                    5 => 2,
+                                    6 => 2,
+                                    _ => 0,
+                                };
+                                switch (mode)
+                                {
+                                    case 0:
+                                        materialTarget.ChangeBaseShader(ShaderVariant.ZTestDefault, ShaderVariant.ZTestMask);
+                                        break;
+                                    case 1:
+                                        materialTarget.ChangeBaseShader(ShaderVariant.ZTestInvert, ShaderVariant.ZTestMask);
+                                        break;
+                                    case 2:
+                                        materialTarget.ChangeBaseShader(ShaderVariant.ZTestDisable, ShaderVariant.ZTestMask);
+                                        break;
+                                }
+                                break;
+                            }
                             default:
                             {
+                                GD.Print($"Setting property: {PropertyIdMap[propertyId]} to float {value}");
                                 materialTarget.SetValue(PropertyIdMap[propertyId], value);
                                 break;
                             }
@@ -157,20 +229,34 @@ public class MaterialManager
                         break;
                     }
                     case MaterialPropertyUpdateType.SetFloat4:
+                    {
+                        var val = reader.ReadVector();
+                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to vector {val}");
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.ReadVector());
                         break;
+                    }
                     case MaterialPropertyUpdateType.SetFloat4x4:
+                    {
+                        var val = reader.ReadMatrix();
+                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to matrix {val}");
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.ReadMatrix());
                         break;
+                    }
                     case MaterialPropertyUpdateType.SetFloatArray:
+                    {
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.AccessFloatArray().ToArray());
                         break;
+                    }
                     case MaterialPropertyUpdateType.SetFloat4Array:
+                    {
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.AccessVectorArray().ToArray());
                         break;
+                    }
                     case MaterialPropertyUpdateType.SetTexture:
                     {
                         //TODO
+                        var index = reader.ReadInt();
+                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to texture {index}");
                         break;
                     }
                 }
@@ -182,5 +268,6 @@ public class MaterialManager
         }
         if (instanceChanged.HasValue) reader.WriteInstanceChanged(instanceChanged.Value);
         RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MaterialsUpdateBatchResult { updateBatchId = command.updateBatchId });
+        GD.Print("Material Update Ended");
     }
 }
