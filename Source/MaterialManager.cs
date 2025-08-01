@@ -26,6 +26,7 @@ public class MaterialManager
         ShaderMap[command.assetId] = shader;
         //TODO
         GD.Print(command.file);
+        /*
         if (File.Exists(command.file))
         {
             using var reader = new ZipReader();
@@ -35,6 +36,7 @@ public class MaterialManager
             var shaderName = meta["sourceFile"].AsGodotDictionary()["filename"].AsString();
             GD.Print(shaderName);
         }
+        */
         
     }
     public void Handle(ShaderUnload command) => ShaderMap.Remove(command.assetId);

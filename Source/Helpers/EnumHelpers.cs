@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using Renderite.Shared;
 
@@ -30,7 +31,7 @@ public static class EnumHelpers
             SubmeshTopology.Points => RenderingServer.PrimitiveType.Points,
             _ => RenderingServer.PrimitiveType.Triangles,
         };
-    public static bool Supported(this TextureFormat format) => format.ToGodot() != (Image.Format)(-1);
+    public static bool Supported(this TextureFormat format) => format.ToGodotAll() != (Image.Format)(-1);
     public static Image.Format ToGodot(this TextureFormat format) => 
         format switch
         {
@@ -43,6 +44,32 @@ public static class EnumHelpers
             TextureFormat.RHalf => Image.Format.Rh,
             TextureFormat.RGHalf => Image.Format.Rgh,
             TextureFormat.RGBAFloat => Image.Format.Rgbaf,
+            TextureFormat.RFloat => Image.Format.Rf,
+            TextureFormat.RGFloat => Image.Format.Rgf,
+            TextureFormat.BC1 => Image.Format.Dxt1, //TODO: these names are fucking weird, is this correct?
+            TextureFormat.BC2 => Image.Format.Dxt3,
+            TextureFormat.BC3 => Image.Format.Dxt5,
+            //TextureFormat.BC4 => Image.Format.RgtcR,
+            //TextureFormat.BC5 => Image.Format.RgtcRg,
+            TextureFormat.ETC2_RGB => Image.Format.Etc2Rgb8,
+            TextureFormat.ETC2_RGBA1 => Image.Format.Etc2Rgb8A1,
+            TextureFormat.ETC2_RGBA8 => Image.Format.Etc2Rgba8,
+            TextureFormat.ASTC_4x4 => Image.Format.Astc4X4,
+            TextureFormat.ASTC_8x8 => Image.Format.Astc8X8,
+            _ => (Image.Format)(-1)
+        };
+    public static Image.Format ToGodotAll(this TextureFormat format) => 
+        format switch
+        {
+            TextureFormat.Alpha8 => Image.Format.L8,
+            TextureFormat.R8 => Image.Format.R8,
+            TextureFormat.RGB24 => Image.Format.Rgb8,
+            TextureFormat.RGBA32 or TextureFormat.BGRA32 or TextureFormat.ARGB32 => Image.Format.Rgba8,
+            TextureFormat.RGB565 or TextureFormat.BGR565 => Image.Format.Rgb565,
+            TextureFormat.RGBAHalf or TextureFormat.ARGBHalf => Image.Format.Rgbah,
+            TextureFormat.RHalf => Image.Format.Rh,
+            TextureFormat.RGHalf => Image.Format.Rgh,
+            TextureFormat.RGBAFloat or TextureFormat.ARGBFloat => Image.Format.Rgbaf,
             TextureFormat.RFloat => Image.Format.Rf,
             TextureFormat.RGFloat => Image.Format.Rgf,
             TextureFormat.BC1 => Image.Format.Dxt1, //TODO: these names are fucking weird, is this correct?
