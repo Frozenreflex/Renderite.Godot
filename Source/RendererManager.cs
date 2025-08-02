@@ -119,12 +119,8 @@ public partial class RendererManager : Node
     private void HandleFrameUpdate(FrameSubmitData submitData)
     {
         LastFrameIndex = submitData.frameIndex;
-        /*
-        NearClip = submitData.nearClip;
-        FarClip = submitData.farClip;
-        DesktopFOV = submitData.desktopFOV;
-        */
         RenderSpace activeRenderSpace = null;
+        RenderSpace activeOverlayRenderSpace = null;
         foreach (var spaceData in submitData.renderSpaces)
         {
             if (!Spaces.TryGetValue(spaceData.id, out var renderSpace))
@@ -137,25 +133,25 @@ public partial class RendererManager : Node
                 Spaces.Add(spaceData.id, renderSpace);
             }
             renderSpace.HandleUpdate(spaceData);
-            if (spaceData.isActive && !spaceData.isOverlay)
+            if (renderSpace.IsActive && !renderSpace.IsOverlay)
                 activeRenderSpace = activeRenderSpace == null
                     ? renderSpace
                     : throw new Exception("Multiple spaces are set to active");
+            if (renderSpace.IsActive && renderSpace.IsOverlay)
+            {
+                activeOverlayRenderSpace = renderSpace;
+            }
+        }
+
+        if (activeRenderSpace is not null)
+        {
+            if (activeOverlayRenderSpace is not null)
+                activeOverlayRenderSpace.UpdateOverlayPositioning(activeRenderSpace.RootTransform);
+            HeadOutputManager.Instance.Handle(submitData, activeRenderSpace);
         }
 
         if (submitData.outputState is not null)
             InputManager.Instance.Handle(submitData.outputState);
-        /*
-        HeadOutput headOutput = this.UpdateVR_Active(submitData.vrActive);
-        if ((UnityEngine.Object) renderSpace1 != (UnityEngine.Object) null)
-            headOutput.UpdatePositioning(renderSpace1);
-            */
-        /*
-        foreach (var (index, space) in Spaces)
-        {
-            if (space.IsActive && space.IsOverlay) space.UpdateOverlayPositioning(headOutput.transform);
-        }
-        */
     }
     private void HandleRenderCommand(RendererCommand command)
     {
@@ -174,7 +170,7 @@ public partial class RendererManager : Node
             // Send some fake data for now
             SharedMemory = new SharedMemoryAccessor(_initData.sharedMemoryPrefix);
             RendererInitResult rendererInitResult = new RendererInitResult();
-            rendererInitResult.actualOutputDevice = HeadOutputDevice.Screen;
+            rendererInitResult.actualOutputDevice = HeadOutputManager.Instance.IsXR ? HeadOutputDevice.SteamVR : HeadOutputDevice.Screen; // This is a lie, no SteamVR to be found here
             rendererInitResult.stereoRenderingMode = "MultiPass";
             rendererInitResult.maxTextureSize = 16384;
             rendererInitResult.isGPUTexturePOTByteAligned = true;

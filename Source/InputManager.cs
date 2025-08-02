@@ -78,20 +78,23 @@ public partial class InputManager : Node
             {
                 isWindowFocused = GetWindow().HasFocus(),
                 windowResolution = GetWindow().Size.ToRenderite(),
+                resolutionSettingsApplied = true,
                 // TODO: drag and drop
             },
             mouse = new MouseState
             {
                 isActive = true,
                 directDelta = mouseDelta.ToRenderite(),
+                desktopPosition = mouseScreenPosition.ToRenderite(),
                 windowPosition = mouseScreenPosition.ToRenderite(),
-                scrollWheelDelta = new RenderVector2(0.0f, scrollDelta * 3.0f), // arbitrary factor, it just felt too slow
+                scrollWheelDelta = new RenderVector2(0.0f, scrollDelta * 10.0f), // arbitrary factor, it just felt WAY too slow
                 leftButtonState = Input.IsMouseButtonPressed(MouseButton.Left),
                 rightButtonState = Input.IsMouseButtonPressed(MouseButton.Right),
                 middleButtonState = Input.IsMouseButtonPressed(MouseButton.Middle),
                 button4State = Input.IsMouseButtonPressed(MouseButton.Xbutton1),
                 button5State = Input.IsMouseButtonPressed(MouseButton.Xbutton2)
-            }
+            },
+            vr = HeadOutputManager.Instance.GetVRInputState()
         };
     }
 
@@ -99,8 +102,8 @@ public partial class InputManager : Node
     {
         var newLockPos = state.lockCursorPosition?.ToGodot();
 
-        if (newLockPos.HasValue)
-            Input.WarpMouse(newLockPos.Value);
+        //if (newLockPos.HasValue)
+        //Input.WarpMouse(newLockPos.Value);
 
         if (state.lockCursor == _lastMouseLocked && newLockPos == _lastLockPosition)
             return;
@@ -118,8 +121,8 @@ public partial class InputManager : Node
         else
         {
             Input.MouseMode = Input.MouseModeEnum.Visible;
-            if (previousLockPos.HasValue)
-                Input.WarpMouse(previousLockPos.Value);
+            //if (previousLockPos.HasValue)
+            //Input.WarpMouse(previousLockPos.Value);
         }
         // TODO: verify this all works correctly
         // in fact something already isn't working correctly from what I can tell,

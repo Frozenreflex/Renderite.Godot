@@ -1,5 +1,4 @@
-using System;
-using System.Linq;
+using System.ComponentModel;
 using Godot;
 using Renderite.Shared;
 
@@ -84,6 +83,14 @@ public static class EnumHelpers
             TextureFormat.ASTC_8x8 => Image.Format.Astc8X8,
             _ => (Image.Format)(-1)
         };
+    public static Chirality ToGodot(XRPositionalTracker.TrackerHand hand) => hand switch
+    {
+        XRPositionalTracker.TrackerHand.Unknown => throw new InvalidEnumArgumentException(),
+        XRPositionalTracker.TrackerHand.Left => Chirality.Left,
+        XRPositionalTracker.TrackerHand.Right => Chirality.Right,
+        XRPositionalTracker.TrackerHand.Max => throw new InvalidEnumArgumentException(),
+        _ => throw new InvalidEnumArgumentException(),
+    };
     public static TextureFlags Convert(TextureFilterMode filter, TextureWrapMode wrapU, TextureWrapMode wrapV)
     {
         var result = (TextureFlags)0;

@@ -23,6 +23,10 @@ config/icon="res://icon.svg"
 
 settings/addon_root_folder="res://addons/debug_draw_3d"
 
+[display]
+
+window/vsync/vsync_mode=0
+
 [dotnet]
 
 project/assembly_name="Renderite.Godot"
@@ -35,3 +39,11 @@ theme/default_font_multichannel_signed_distance_field=true
 
 3d_render/layer_1="Default"
 3d_render/layer_2="Private"
+
+[xr]
+
+openxr/enabled=true
+openxr/default_action_map="uid://cwgi2fq7yqn2k"
+openxr/startup_alert=false
+openxr/extensions/hand_tracking=true
+shaders/enabled=true

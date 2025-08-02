@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Godot.NativeInterop;
 using Renderite.Godot.Source.Helpers;
 using Renderite.Godot.Source.Scene;
 using Renderite.Godot.Source.SharedMemory;
@@ -17,20 +18,24 @@ public partial class RenderSpace : Node3D
     public Vector3 RootPosition;
     public Quaternion RootRotation;
     public Vector3 RootScale;
+    public bool OverridePosition;
+    public Vector3 OverridenPosition;
+    public Quaternion OverridenRotation;
+    public Vector3 OverridenScale;
     public readonly List<TransformNode> Nodes = new();
     public readonly List<MeshInstanceManager> Meshes = new();
     public readonly List<SkinnedMeshInstanceManager> SkinnedMeshes = new();
     public readonly List<LightInstanceManager> Lights = new();
     private bool _lastPrivate;
     private bool _lastActive;
-    private Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
+    public Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
 
-    public void UpdateOverlayPositioning(Node3D referenceNode)
+    public void UpdateOverlayPositioning(Transform3D referenceTransform)
     {
         if (IsOverlay)
         {
             //Transform = referenceNode.GlobalTransform * TransformHelpers.TransformFromTR(-RootPosition, RootRotation);
-            Transform = TransformHelpers.TransformFromTRS(referenceNode.Position - RootPosition, referenceNode.Quaternion * RootRotation, referenceNode.Scale);
+            Transform = referenceTransform * RootTransform.AffineInverse();
             //TODO: is this correct?
             /*
             transform.position = referenceTransform.position - this.RootPosition;
@@ -48,14 +53,17 @@ public partial class RenderSpace : Node3D
         if (IsActive != _lastActive)
         {
             _lastActive = IsActive;
-        }
-        if (IsActive)
-        {
+            Visible = IsActive;
         }
 
         RootPosition = data.rootTransform.position.ToGodot();
         RootRotation = data.rootTransform.rotation.ToGodot();
         RootScale = data.rootTransform.scale.ToGodotLiteral(); //we don't want to convert (1,1,1) to (-1,1,1)
+
+        OverridePosition = data.overrideViewPosition;
+        OverridenPosition = data.overridenViewTransform.position.ToGodot();
+        OverridenRotation = data.overridenViewTransform.rotation.ToGodot();
+        OverridenScale = data.overridenViewTransform.scale.ToGodotLiteral();
 
         if (data.transformsUpdate is not null) HandleTransformUpdate(data.transformsUpdate);
         if (data.meshRenderersUpdate is not null) HandleMeshRenderablesUpdate(data.meshRenderersUpdate);

@@ -29,12 +29,17 @@ public class SceneInstanceManager
         InstanceRid = RenderingServer.InstanceCreate();
         RenderingServer.InstanceSetScenario(InstanceRid, Main.Scenario);
         Base.GlobalTransformChanged += BaseOnGlobalTransformChanged;
+        Base.VisibilityChanged += OnVisibilityChanged;
         OnInitialize();
         Initialized = true;
     }
     protected virtual void OnInitialize()
     {
         
+    }
+    protected virtual void OnVisibilityChanged()
+    {
+        if (InstanceValid) RenderingServer.InstanceSetVisible(InstanceRid, Base.IsVisibleInTree());
     }
     protected void UpdateTransform()
     {
@@ -45,6 +50,7 @@ public class SceneInstanceManager
     public virtual void Cleanup()
     {
         Base.GlobalTransformChanged -= BaseOnGlobalTransformChanged;
+        Base.VisibilityChanged -= OnVisibilityChanged;
         Base = null;
         RenderingServer.FreeRid(InstanceRid);
         InstanceRid = new Rid();

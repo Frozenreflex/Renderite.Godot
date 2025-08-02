@@ -46,6 +46,18 @@ public static class TransformHelpers
     /// </summary>
     public static Vector3 ToGodot(this RenderVector3 vector) => new(-vector.x, vector.y, vector.z);
     /// <summary>
+    /// Converts a Godot Vector3 to a RenderVector3, without accounting for the flipped X axis
+    /// </summary>
+    public static RenderVector3 ToRenderiteLiteral(this Vector3 vector) => new(vector.X, vector.Y, vector.Z);
+    /// <summary>
+    /// Converts a Godot Vector3 to a RenderVector3, accounting for the flipped X axis
+    /// </summary>
+    public static RenderVector3 ToRenderite(this Vector3 vector) => new(-vector.X, vector.Y, vector.Z);
+    /// <summary>
+    /// Converts a Godot Vector3 to a RenderVector3, flipping the Z axis
+    /// </summary>
+    public static RenderVector3 ToRenderiteZflip(this Vector3 vector) => new(vector.X, vector.Y, -vector.Z);
+    /// <summary>
     /// Converts a RenderQuaternion to a Godot Quaternion, without accounting for the flipped X axis
     /// </summary>
     public static Quaternion ToGodotLiteral(this RenderQuaternion quaternion) => new(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
@@ -55,6 +67,18 @@ public static class TransformHelpers
     /// Converts a RenderQuaternion to a Godot Quaternion, accounting for the flipped X axis
     /// </summary>
     public static Quaternion ToGodot(this RenderQuaternion quaternion) => new(quaternion.x, -quaternion.y, -quaternion.z, quaternion.w);
+    /// <summary>
+    /// Converts a Godot Quaternion to a RenderQuaternion, without accounting for the flipped X axis
+    /// </summary>
+    public static RenderQuaternion ToRenderiteLiteral(this Quaternion quaternion) => new(quaternion.X, quaternion.Y, quaternion.Z, quaternion.W);
+    /// <summary>
+    /// Converts a Godot Quaternion to a RenderQuaternion, accounting for the flipped X axis
+    /// </summary>
+    public static RenderQuaternion ToRenderite(this Quaternion quaternion) => new(quaternion.X, -quaternion.Y, -quaternion.Z, quaternion.W);
+    /// <summary>
+    /// Converts a Godot Vector3 to a RenderVector3, flipping the Z axis
+    /// </summary>
+    public static RenderQuaternion ToRenderiteZflip(this Quaternion quaternion) => new(-quaternion.X, -quaternion.Y, quaternion.Z, quaternion.W);
     public static Color ToGodotColor(this RenderVector4 vec) => new(vec.x, vec.y, vec.z, vec.w);
     public static Aabb ToGodot(this RenderBoundingBox boundingBox)
     {
