@@ -38,8 +38,6 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         }
     }
 
-    protected override bool TrackMeshAssetChanges => true;
-
     public void UpdateAllTransforms()
     {
         if (TrackedBones is null || Mesh is null || SkeletonRid == NullRid) return;
@@ -49,9 +47,14 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
                 bone?.UpdateTransform();
     }
 
-    protected override void OnMeshAssetChanged() => UpdateAllTransforms();
+    protected override void OnMeshAssetChanged()
+    {
+        base.OnMeshAssetChanged();
+        UpdateAllTransforms();
+    }
     protected override void OnMeshChanged()
     {
+        base.OnMeshChanged();
         if (Mesh.AssetID != NullRid) RenderingServer.InstanceAttachSkeleton(InstanceRid, SkeletonRid); //TODO is this needed
         UpdateAllTransforms();
     }
