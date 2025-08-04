@@ -47,7 +47,6 @@ public class ShaderInstance
         value.Users--;
         if (value.Users <= 0) _shaderMap.Remove(variant);
     }
-    public void Cleanup() => _shaderMap.Clear();
     public Rid GetShader(ShaderVariant variant)
     {
         if (!_shaderMap.TryGetValue(variant, out var value))

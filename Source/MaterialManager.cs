@@ -17,26 +17,31 @@ public class MaterialManager
         "_DstBlend",
         "_ZTest",
     ];
-    
+
+    public Dictionary<string, ShaderInstance> Shaders = new();
     public Dictionary<int, ShaderInstance> ShaderMap = new();
     public Dictionary<int, MaterialInstance> Materials = new();
     
     public void Handle(ShaderUpload command)
     {
-        var shader = new ShaderInstance();
-        
-
         var shaderName = command.file.Replace(".shader", "");
 
         var path = $"res://Resources/Shaders/{shaderName}.gdshader";
-        if (ResourceLoader.Exists(path))
+
+        if (Shaders.TryGetValue(path, out var s)) ShaderMap[command.assetId] = s;
+        else
         {
-            GD.Print($"Loading {path}");
-            var baseShader = ResourceLoader.Load<Shader>(path);
-            shader.BaseShader = baseShader.Code;
+            var shader = new ShaderInstance();
+            if (ResourceLoader.Exists(path))
+            {
+                GD.Print($"Loading {path}");
+                var baseShader = ResourceLoader.Load<Shader>(path);
+                shader.BaseShader = baseShader.Code;
+            }
+            else GD.Print($"Unimplemented: {shaderName}");
+            Shaders[path] = shader;
+            ShaderMap[command.assetId] = shader;
         }
-        else GD.Print($"Unimplemented: {shaderName}");
-        ShaderMap[command.assetId] = shader;
         
         var result = new ShaderUploadResult
         {
@@ -47,7 +52,6 @@ public class MaterialManager
     }
     public void Handle(ShaderUnload command)
     {
-        if (ShaderMap.TryGetValue(command.assetId, out var remove)) remove.Cleanup();
         ShaderMap.Remove(command.assetId);
     }
 
