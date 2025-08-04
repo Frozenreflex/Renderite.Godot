@@ -114,32 +114,48 @@ public class AssetManager
                     //PackerMemoryPool.Instance.Return(materialsUpdateBatch);
                     break;
                 }
-            /*
             case SetTexture2DFormat setTexture2DFormat:
                 {
-                    TextureManager.Handle(setTexture2DFormat);
+                    //TextureManager.Handle(setTexture2DFormat);
+                    RendererManager.Instance.BackgroundMessagingManager.SendCommand(new SetTexture2DResult
+                    {
+                        assetId = setTexture2DFormat.assetId,
+                        instanceChanged = true,
+                        type = TextureUpdateResultType.FormatSet,
+                    });
                     PackerMemoryPool.Instance.Return(setTexture2DFormat);
                     break;
                 }
             case SetTexture2DProperties setTexture2DProperties:
                 {
-                    TextureManager.Handle(setTexture2DProperties);
+                    //TextureManager.Handle(setTexture2DProperties);
+                    RendererManager.Instance.BackgroundMessagingManager.SendCommand(new SetTexture2DResult
+                    {
+                        assetId = setTexture2DProperties.assetId,
+                        instanceChanged = true,
+                        type = TextureUpdateResultType.PropertiesSet,
+                    });
                     PackerMemoryPool.Instance.Return(setTexture2DProperties);
                     break;
                 }
             case SetTexture2DData setTexture2DData:
                 {
-                    TextureManager.Handle(setTexture2DData);
+                    //TextureManager.Handle(setTexture2DData);
+                    RendererManager.Instance.BackgroundMessagingManager.SendCommand(new SetTexture2DResult
+                    {
+                        assetId = setTexture2DData.assetId,
+                        instanceChanged = true,
+                        type = TextureUpdateResultType.DataUpload,
+                    });
                     PackerMemoryPool.Instance.Return(setTexture2DData);
                     break;
                 }
             case UnloadTexture2D unloadTexture2D:
                 {
-                    TextureManager.Handle(unloadTexture2D);
+                    //TextureManager.Handle(unloadTexture2D);
                     PackerMemoryPool.Instance.Return(unloadTexture2D);
                     break;
                 }
-                */
         }
     }
 }
