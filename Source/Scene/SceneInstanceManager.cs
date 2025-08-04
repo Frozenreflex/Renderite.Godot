@@ -55,5 +55,6 @@ public class SceneInstanceManager
         RenderingServer.FreeRid(InstanceRid);
         InstanceRid = new Rid();
         Initialized = false;
+        InstanceValid = false;
     }
 }

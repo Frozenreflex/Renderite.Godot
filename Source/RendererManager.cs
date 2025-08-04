@@ -175,13 +175,6 @@ public partial class RendererManager : Node
             rendererInitResult.maxTextureSize = 16384;
             rendererInitResult.isGPUTexturePOTByteAligned = true;
             rendererInitResult.supportedTextureFormats = Enum.GetValues<TextureFormat>().Where(i => i.Supported()).ToList();
-            /*
-            rendererInitResult.supportedTextureFormats =
-            [
-                TextureFormat.RGB24,
-                TextureFormat.RGBA32,
-            ];
-            */
             PrimaryMessagingManager.SendCommand(rendererInitResult);
         }
         else

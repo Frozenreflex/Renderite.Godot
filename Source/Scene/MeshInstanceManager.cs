@@ -15,16 +15,12 @@ public class MeshInstanceManager : AssetSceneInstanceManager
             if (field is not null) field.MeshChanged -= OnMeshAssetChanged;
             field = value;
             if (InstanceRid == NullRid) return;
-            UpdateRenderingServerRid();
+            InstanceValid = Mesh is not null;
+            RenderingServer.InstanceSetBase(InstanceRid, Mesh?.AssetID ?? NullRid);
+            UpdateMaterials();
             if (field is not null) field.MeshChanged += OnMeshAssetChanged;
             OnMeshChanged();
         }
-    }
-    private void UpdateRenderingServerRid()
-    {
-        InstanceValid = Mesh is not null;
-        RenderingServer.InstanceSetBase(InstanceRid, Mesh?.AssetID ?? NullRid);
-        UpdateMaterials();
     }
     public RenderingServer.ShadowCastingSetting ShadowCastingMode = (RenderingServer.ShadowCastingSetting)(-1);
 
@@ -47,7 +43,7 @@ public class MeshInstanceManager : AssetSceneInstanceManager
     }
     protected virtual void OnMeshAssetChanged()
     {
-        UpdateRenderingServerRid();
+        UpdateMaterials();
     }
     public override void Cleanup()
     {

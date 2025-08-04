@@ -43,15 +43,11 @@ public class ShaderInstance
 
     public void Return(ShaderVariant variant)
     {
-        if (_shaderMap.TryGetValue(variant, out var value))
-        {
-            value.Users--;
-            if (value.Users == 0)
-            {
-                _shaderMap.Remove(variant);
-            }
-        }
+        if (!_shaderMap.TryGetValue(variant, out var value)) return;
+        value.Users--;
+        if (value.Users <= 0) _shaderMap.Remove(variant);
     }
+    public void Cleanup() => _shaderMap.Clear();
     public Rid GetShader(ShaderVariant variant)
     {
         if (!_shaderMap.TryGetValue(variant, out var value))
@@ -91,9 +87,9 @@ public class ShaderInstance
                 code.Append(BaseShader);
                 value.Shader.Code = code.ToString();
             }
+            _shaderMap[variant] = value;
         }
         value.Users++;
         return value.Rid;
-        
     }
 }

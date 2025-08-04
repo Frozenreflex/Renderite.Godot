@@ -7,7 +7,7 @@ namespace Renderite.Godot.Source;
 
 public class MaterialInstance
 {
-    public Rid MaterialRid;
+    public Rid MaterialRid = RenderingServer.MaterialCreate();
     
     public MaterialRenderType Type
     {
@@ -82,11 +82,9 @@ public class MaterialInstance
     public bool Instantiated;
     
     public ShaderVariant Variant;
-    public MaterialInstance() => MaterialRid = RenderingServer.MaterialCreate();
-
-    //private Rid _currentShader;
 
     /*
+    private Rid _currentShader;
     private void ChangeShader(Rid shaderRid)
     {
         if (MaterialRid == new Rid()) return;
@@ -110,8 +108,8 @@ public class MaterialInstance
         if (oldVariant == newVariant) return;
         GD.Print($"Changing shader variant. Old: {oldVariant:X} New: {newVariant:X}");
         Variant = newVariant;
-        Shader.Return(Variant);
         RenderingServer.MaterialSetShader(MaterialRid, Shader.GetShader(Variant));
+        Shader.Return(oldVariant);
     }
 
     //TODO: apparently frooxengine just doesn't remove materials? uhhhhhhh?

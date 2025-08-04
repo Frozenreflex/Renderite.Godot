@@ -45,8 +45,12 @@ public class MaterialManager
         };
         RendererManager.Instance.BackgroundMessagingManager.SendCommand(result);
     }
-    public void Handle(ShaderUnload command) => ShaderMap.Remove(command.assetId);
-    
+    public void Handle(ShaderUnload command)
+    {
+        if (ShaderMap.TryGetValue(command.assetId, out var remove)) remove.Cleanup();
+        ShaderMap.Remove(command.assetId);
+    }
+
     public void Handle(MaterialPropertyIdRequest request)
     {
         var command = new MaterialPropertyIdResult { requestId = request.requestId, };
