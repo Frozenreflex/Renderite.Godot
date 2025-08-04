@@ -66,6 +66,30 @@ public class MaterialInstance
         ChangeBaseShader(variant, ShaderVariant.BlendModeMask);
     }
     public void SetValue(StringName name, Variant value) => RenderingServer.MaterialSetParam(MaterialRid, name, value);
+    public void SetTexture(int id, TextureEntry entry)
+    {
+        var name = MaterialManager.PropertyIdMap[id];
+        var str = name.ToString();
+        var rid = entry?.Rid ?? new Rid();
+        RenderingServer.MaterialSetParam(MaterialRid, $"{str}_Nearest", rid);
+        RenderingServer.MaterialSetParam(MaterialRid, $"{str}_Linear", rid);
+        RenderingServer.MaterialSetParam(MaterialRid, $"{str}_Anisotropic", rid);
+        RenderingServer.MaterialSetParam(MaterialRid, $"{str}_Flags", entry is not null ? ((int)entry.Flags) : 0);
+
+        if (_textureCache.TryGetValue(id, out var existing) && existing is not null) existing.FlagsChanged -= EntryOnFlagsChanged;
+        _textureCache[id] = entry;
+        if (entry is not null) entry.FlagsChanged += EntryOnFlagsChanged;
+    }
+    private void EntryOnFlagsChanged(TextureEntry obj)
+    {
+        var ids = _textureCache.Where(i => i.Value == obj).Select(i => i.Key);
+        foreach (var id in ids)
+        {
+            var name = MaterialManager.PropertyIdMap[id];
+            var str = name.ToString();
+            RenderingServer.MaterialSetParam(MaterialRid, $"{str}_Flags", (int)obj.Flags);
+        }
+    }
 
     public ShaderInstance Shader
     {
@@ -77,11 +101,17 @@ public class MaterialInstance
             field = value;
             UseBlendMode = false;
             RenderingServer.MaterialSetShader(MaterialRid, field?.GetShader(Variant) ?? new Rid());
+            //_paramCache.Clear();
+            foreach (var entry in _textureCache.Where(i => i.Value is not null)) entry.Value.FlagsChanged -= EntryOnFlagsChanged;
+            _textureCache.Clear();
         }
     }
     public bool Instantiated;
     
     public ShaderVariant Variant;
+
+    //public Dictionary<int, Variant> _paramCache = new();
+    public Dictionary<int, TextureEntry> _textureCache = new();
 
     /*
     private Rid _currentShader;
@@ -113,5 +143,11 @@ public class MaterialInstance
     }
 
     //TODO: apparently frooxengine just doesn't remove materials? uhhhhhhh?
-    private void Cleanup() => RenderingServer.FreeRid(MaterialRid);
+    private void Cleanup()
+    {
+        RenderingServer.FreeRid(MaterialRid);
+        //_paramCache.Clear();
+        foreach (var entry in _textureCache) entry.Value.FlagsChanged -= EntryOnFlagsChanged;
+        _textureCache.Clear();
+    }
 }

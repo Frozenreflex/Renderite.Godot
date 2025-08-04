@@ -33,6 +33,7 @@ void fragment()
     SetAlphaCutout(_Cutoff);
     ALBEDO = albedo.rgb;
     vec3 normals = BlendNormals(ReadNormal(SampleSTTextureData(BumpMap, MainTex, UV)) * _BumpScale, ReadNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, UV)) * _DetailNormalMapScale);
+    NORMAL_MAP = normals;
     vec4 metallicGloss = SampleSTTextureData(MetallicGlossMap, MainTex, UV);
     METALLIC = metallicGloss.r * _Metallic;
     ROUGHNESS = 1.0 - (metallicGloss.a * _Glossiness);

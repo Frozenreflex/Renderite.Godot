@@ -5,7 +5,8 @@ render_mode unshaded;
 #include "res://Resources/ShaderIncs/ResoniteZTestMode.gdshaderinc"
 #include "res://Resources/ShaderIncs/ResoniteIncludes.gdshaderinc"
 
-ColorTexture2DWhite(FontAtlas)
+//ColorTexture2DWhite(FontAtlas)
+MapTexture2DOne(FontAtlas)
 
 uniform vec4 _TintColor = vec4(1);
 uniform vec4 _OverlayTint = vec4(1,1,1,0.5);
@@ -26,7 +27,7 @@ void fragment()
     vec4 atlasColor = SampleTexture(FontAtlas, UV);
     vec2 msdfUnit = _Range.xy;
     float sigDist = median(atlasColor.r, atlasColor.g, atlasColor.b) - 0.5;
-    sigDist += _FaceDilate + NORMAL.x;
+    //sigDist += _FaceDilate + NORMAL.x;
 
     float antiAliasing = dot(msdfUnit, 0.5 / fwidth(UV));
     antiAliasing = max(antiAliasing, 1);
@@ -37,7 +38,7 @@ void fragment()
 
     vec4 fillColor = _TintColor * COLOR;
 
-    float outlineDist = sigDist - (_OutlineSize + NORMAL.y);
+    float outlineDist = sigDist - (_OutlineSize/* + NORMAL.y*/);
     float outlineLerp = lerp(outlineDist * antiAliasing, outlineDist, _FaceSoftness);
 
     outlineLerp = saturate(outlineLerp + 0.5);

@@ -31,8 +31,10 @@ public enum TextureFlags
 public class TextureEntry
 {
     public Rid Rid;
-    //public Image Image;
     public TextureFlags Flags;
+
+    public event Action<TextureEntry> FlagsChanged = _ => { };
+    public void InvokeFlagsChanged() => FlagsChanged.Invoke(this);
 
     public int Width;
     public int Height;
@@ -80,6 +82,7 @@ public class TextureManager
     {
         var entry = GetOrCreate(command.assetId);
         entry.Flags = EnumHelpers.Convert(command.filterMode, command.wrapU, command.wrapV);
+        entry.InvokeFlagsChanged();
         
         var result = new SetTexture2DResult
         {
@@ -95,20 +98,20 @@ public class TextureManager
         //TODO: is this data somehow mangled for unity, and we need to somehow unmangle it
         var size = ImageHelpers.GetDstImageSize(entry.Width, entry.Height, entry.Format.ToGodotAll(), out _, 0);
         var slice = SharedMemoryAccessor.Instance.AccessSlice(command.data);
-        Span<byte> data;
-        var saveDebug = true;
-        if (slice.RawData.Length >= size) data = slice.RawData[..size];
+        Image image;
+        if (slice.RawData.Length >= size)
+        {
+            var data = slice.RawData[..size];
+            image = ImageHelpers.Create(entry.Width, entry.Height, false, entry.Format, data);
+            if (true) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
+        }
         else
         {
-            //TODO
-            GD.Print($"Format: {entry.Format} Size: {entry.Width}x{entry.Height} Expected: {size} Actual: {slice.RawData.Length}");
-            data = new byte[size];
-            saveDebug = false;
+            //TODO: figure out why invalid data is being sent
+            //is frooxengine sending smaller mipmaps?
+            //GD.Print($"Format: {entry.Format} Size: {entry.Width}x{entry.Height} Expected: {size} Actual: {slice.RawData.Length}");
+            image = Image.CreateEmpty(entry.Width, entry.Height, false, Image.Format.Dxt1);
         }
-        var image = ImageHelpers.Create(entry.Width, entry.Height, false, entry.Format, data);
-        //var image = Image.CreateFromData(entry.Width, entry.Height, /*entry.MipmapCount > 0*/ false, entry.Format.ToGodot(), SharedMemoryAccessor.Instance.AccessSlice(command.data).Data[..size]);
-        
-        if (true && saveDebug) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
         
         var tempRid = RenderingServer.Texture2DCreate(image);
         RenderingServer.TextureReplace(entry.Rid, tempRid);

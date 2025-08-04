@@ -259,8 +259,7 @@ public class MaterialManager
                     }
                     case MaterialPropertyUpdateType.SetTexture:
                     {
-                        //TODO
-                        var index = reader.ReadInt();
+                        materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.Texture2Ds.GetValueOrDefault(reader.ReadInt()));
                         break;
                     }
                 }
