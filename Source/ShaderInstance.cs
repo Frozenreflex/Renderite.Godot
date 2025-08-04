@@ -32,12 +32,13 @@ public enum ShaderVariant
 }
 public class ShaderInstance
 {
-    private class Shader
+    private class InternalShader
     {
-        public Rid Rid;
+        public Rid Rid => Shader.GetRid();
+        public readonly Shader Shader = new();
         public int Users;
     }
-    private readonly Dictionary<ShaderVariant, Shader> _shaderMap = new();
+    private readonly Dictionary<ShaderVariant, InternalShader> _shaderMap = new();
     public string BaseShader;
 
     public void Return(ShaderVariant variant)
@@ -47,7 +48,6 @@ public class ShaderInstance
             value.Users--;
             if (value.Users == 0)
             {
-                RenderingServer.FreeRid(value.Rid);
                 _shaderMap.Remove(variant);
             }
         }
@@ -56,11 +56,8 @@ public class ShaderInstance
     {
         if (!_shaderMap.TryGetValue(variant, out var value))
         {
-            value = new Shader
-            {
-                Rid = RenderingServer.ShaderCreate(),
-            };
-            if (variant == 0) RenderingServer.ShaderSetCode(value.Rid, BaseShader);
+            value = new InternalShader();
+            if (variant == 0) value.Shader.Code = BaseShader;
             else
             {
                 var code = new StringBuilder();
@@ -92,7 +89,7 @@ public class ShaderInstance
                 if (depth > 0) code.Append(depth is ShaderVariant.ZTestInvert ? "#define ZTEST_MODE 1\n" : "#define ZTEST_MODE 2\n");
 
                 code.Append(BaseShader);
-                RenderingServer.ShaderSetCode(value.Rid, code.ToString());
+                value.Shader.Code = code.ToString();
             }
         }
         value.Users++;

@@ -200,8 +200,7 @@ public partial class RenderSpace : Node3D
     }
     public void HandleSkinnedMeshRenderablesUpdate(SkinnedMeshRenderablesUpdate update)
     {
-        //skinnedmeshes don't listen to transform updates because bones need to be done in global space, rather than relative to the root
-        HandleSceneInstanceAdditionRemoval(SkinnedMeshes, update, false);
+        HandleSceneInstanceAdditionRemoval(SkinnedMeshes, update);
         HandleMeshRenderablesUpdateBase(update, SkinnedMeshes);
         //TODO: bounds updates
         if (!update.boneAssignments.IsEmpty)
@@ -234,8 +233,10 @@ public partial class RenderSpace : Node3D
                 for (var i = 0; i < blendshapeUpdateBatch.blendshapeUpdateCount; i++)
                 {
                     var blend = blendshapeUpdates[updateIndex++];
-                    if (mesh.Mesh.BlendShapeCount > blend.blendshapeIndex) RenderingServer.InstanceSetBlendShapeWeight(mesh.InstanceRid, blend.blendshapeIndex, blend.weight);
+                    mesh.BlendShapeValues[blend.blendshapeIndex] = blend.weight;
+                    //if (mesh.Mesh.BlendShapeCount > blend.blendshapeIndex) RenderingServer.InstanceSetBlendShapeWeight(mesh.InstanceRid, blend.blendshapeIndex, blend.weight);
                 }
+                mesh.UpdateBlendShapes();
             }
         }
     }
@@ -268,12 +269,16 @@ public partial class RenderSpace : Node3D
                 //godot has a sorting offset, but this is a float that changes the depth of the fragment
                 if (meshState.materialCount >= 0)
                 {
+                    var matArray = new MaterialInstance[meshState.materialCount];
                     for (var i = 0; i < meshState.materialCount; i++)
                     {
                         var matId = materials[materialsIndex++];
                         var mat = RendererManager.Instance.AssetManager.MaterialManager.Materials.GetValueOrDefault(matId);
-                        RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
+                        matArray[i] = mat;
+                        //RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
                     }
+                    mesh.Materials = matArray;
+                    mesh.UpdateMaterials();
                     if (meshState.materialPropertyBlockCount >= 0)
                     {
                         for (var i = 0; i < meshState.materialPropertyBlockCount; i++)
@@ -286,7 +291,7 @@ public partial class RenderSpace : Node3D
             }
         }
     }
-    private void HandleSceneInstanceAdditionRemoval<T>(List<T> list, RenderablesUpdate update, bool listen = true) where T : SceneInstanceManager, new()
+    private void HandleSceneInstanceAdditionRemoval<T>(List<T> list, RenderablesUpdate update) where T : SceneInstanceManager, new()
     {
         if (!update.removals.IsEmpty)
         {

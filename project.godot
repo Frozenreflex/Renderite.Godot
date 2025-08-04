@@ -42,7 +42,6 @@ theme/default_font_multichannel_signed_distance_field=true
 
 [xr]
 
-openxr/enabled=true
 openxr/default_action_map="uid://cwgi2fq7yqn2k"
 openxr/startup_alert=false
 openxr/extensions/hand_tracking=true

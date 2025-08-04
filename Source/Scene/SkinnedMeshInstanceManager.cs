@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using Renderite.Godot.Source.Helpers;
 
@@ -20,6 +21,7 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         }
         public void UpdateTransform()
         {
+            if (Manager?.Mesh is null) return;
             if (Manager.Mesh.AssetID == NullRid) return;
             var skin = Manager.Mesh.Skin;
             if (BoneIndex >= skin.Length) return;
@@ -51,12 +53,14 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
     {
         base.OnMeshAssetChanged();
         UpdateAllTransforms();
+        UpdateBlendShapes();
     }
     protected override void OnMeshChanged()
     {
         base.OnMeshChanged();
         if (Mesh.AssetID != NullRid) RenderingServer.InstanceAttachSkeleton(InstanceRid, SkeletonRid); //TODO is this needed
         UpdateAllTransforms();
+        UpdateBlendShapes();
     }
 
     public Bone[] TrackedBones
@@ -72,6 +76,8 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
     public Rid SkeletonRid;
     public Transform3D InverseGlobal { get; private set; }
 
+    public Dictionary<int, float> BlendShapeValues = new();
+
     protected override void OnInitialize()
     {
         base.OnInitialize();
@@ -84,6 +90,13 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         UpdateInverseGlobal();
         UpdateAllTransforms();
     }
+    public void UpdateBlendShapes()
+    {
+        if (!InstanceValid) return;
+        if (Mesh is null) return;
+        var count = Mesh.BlendShapeCount;
+        for (var i = 0; i < count; i++) RenderingServer.InstanceSetBlendShapeWeight(InstanceRid, i, BlendShapeValues.GetValueOrDefault(i));
+    }
     private void UpdateInverseGlobal() => InverseGlobal = Base.GlobalTransform.AffineInverse();
 
     public override void Cleanup()
@@ -91,5 +104,6 @@ public class SkinnedMeshInstanceManager : MeshInstanceManager
         base.Cleanup();
         RenderingServer.FreeRid(SkeletonRid);
         SkeletonRid = NullRid;
+        foreach (var bone in TrackedBones) bone.Cleanup();
     }
 }

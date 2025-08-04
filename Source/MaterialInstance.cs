@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using Godot.Collections;
 using Renderite.Shared;
 
 namespace Renderite.Godot.Source;
@@ -66,7 +65,6 @@ public class MaterialInstance
         if ((Variant & ShaderVariant.BlendModeMask) == variant) return;
         ChangeBaseShader(variant, ShaderVariant.BlendModeMask);
     }
-
     public void SetValue(StringName name, Variant value) => RenderingServer.MaterialSetParam(MaterialRid, name, value);
 
     public ShaderInstance Shader
@@ -81,9 +79,29 @@ public class MaterialInstance
             RenderingServer.MaterialSetShader(MaterialRid, field?.GetShader(Variant) ?? new Rid());
         }
     }
+    public bool Instantiated;
     
     public ShaderVariant Variant;
     public MaterialInstance() => MaterialRid = RenderingServer.MaterialCreate();
+
+    //private Rid _currentShader;
+
+    /*
+    private void ChangeShader(Rid shaderRid)
+    {
+        if (MaterialRid == new Rid()) return;
+        if (shaderRid == new Rid() || _currentShader == new Rid())
+        {
+            RenderingServer.MaterialSetShader(MaterialRid, shaderRid);
+            _currentShader = shaderRid;
+            return;
+        }
+        var list = RenderingServer.GetShaderParameterList(_currentShader).Select(i => i["name"].AsStringName()).Select(i => (i, RenderingServer.MaterialGetParam(MaterialRid, i))).ToArray();
+        RenderingServer.MaterialSetShader(MaterialRid, shaderRid);
+        foreach (var param in list) RenderingServer.MaterialSetParam(MaterialRid, param.Item1, param.Item2);
+        _currentShader = shaderRid;
+    }
+    */
 
     public void ChangeBaseShader(ShaderVariant value, ShaderVariant mask)
     {

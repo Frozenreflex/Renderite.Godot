@@ -37,6 +37,13 @@ public class MaterialManager
         }
         else GD.Print($"Unimplemented: {shaderName}");
         ShaderMap[command.assetId] = shader;
+        
+        var result = new ShaderUploadResult
+        {
+            assetId = command.assetId,
+            instanceChanged = true,
+        };
+        RendererManager.Instance.BackgroundMessagingManager.SendCommand(result);
     }
     public void Handle(ShaderUnload command) => ShaderMap.Remove(command.assetId);
     
@@ -50,7 +57,7 @@ public class MaterialManager
             else
             {
                 command.propertyIDs.Add(PropertyIdMap.Count);
-                GD.Print($"Index {PropertyIdMap.Count}: {name}");
+                //GD.Print($"Index {PropertyIdMap.Count}: {name}");
                 PropertyIdMap.Add(name);
             }
         }
@@ -59,8 +66,6 @@ public class MaterialManager
 
     public void Handle(MaterialsUpdateBatch command)
     {
-        GD.Print("Updating Material");
-        GD.Print($"Material update count: {command.materialUpdateCount}");
         var instanceChangedBuffer = new BitSpan(SharedMemoryAccessor.Instance.AccessData(command.instanceChangedBuffer));
         var reader = new MaterialUpdateReader(command, instanceChangedBuffer);
         /*
@@ -86,7 +91,6 @@ public class MaterialManager
                     instanceChanged = true;
                     //target2 = this.PropertyBlocks.GetAsset(update.propertyID);
                     //nullable1 = new bool?(target2.EnsureInstance());
-                    GD.Print($"Material Property Block Target set to {update.propertyID}");
                 }
                 else
                 {
@@ -97,12 +101,10 @@ public class MaterialManager
                         instanceChanged = true;
                     }
                     materialTarget = mat;
-                    GD.Print($"Material Target set to {update.propertyID}");
                 }
             }
             else if (isMaterialPropertyBlock)
             {
-                GD.Print($"Updating Material Property Blocks, {update.updateType}");
                 //TODO
                 instanceChanged = true;
                 //bool? nullable2 = nullable1;
@@ -131,19 +133,23 @@ public class MaterialManager
             }
             else
             {
-                GD.Print("Updating Material Variables");
                 if (materialTarget is null)
                 {
-                    GD.Print("Material Target is empty!");
+                    //GD.Print("Material Target is empty!");
                     continue;
                 }
+                if (update.updateType != MaterialPropertyUpdateType.SetShader && !materialTarget.Instantiated) throw new Exception();
                 var propertyId = update.propertyID;
                 switch (update.updateType)
                 {
                     case MaterialPropertyUpdateType.SetShader:
                     {
                         materialTarget.Shader = ShaderMap.GetValueOrDefault(propertyId);
-                        GD.Print($"Setting shader: {propertyId}");
+                        if (!materialTarget.Instantiated)
+                        {
+                            instanceChanged = true;
+                            materialTarget.Instantiated = true;
+                        }
                         break;
                     }
                     case MaterialPropertyUpdateType.SetRenderQueue:
@@ -221,7 +227,6 @@ public class MaterialManager
                             }
                             default:
                             {
-                                GD.Print($"Setting property: {PropertyIdMap[propertyId]} to float {value}");
                                 materialTarget.SetValue(PropertyIdMap[propertyId], value);
                                 break;
                             }
@@ -230,15 +235,11 @@ public class MaterialManager
                     }
                     case MaterialPropertyUpdateType.SetFloat4:
                     {
-                        var val = reader.ReadVector();
-                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to vector {val}");
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.ReadVector());
                         break;
                     }
                     case MaterialPropertyUpdateType.SetFloat4x4:
                     {
-                        var val = reader.ReadMatrix();
-                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to matrix {val}");
                         materialTarget.SetValue(PropertyIdMap[propertyId], reader.ReadMatrix());
                         break;
                     }
@@ -256,7 +257,6 @@ public class MaterialManager
                     {
                         //TODO
                         var index = reader.ReadInt();
-                        GD.Print($"Setting property: {PropertyIdMap[propertyId]} to texture {index}");
                         break;
                     }
                 }
@@ -268,6 +268,5 @@ public class MaterialManager
         }
         if (instanceChanged.HasValue) reader.WriteInstanceChanged(instanceChanged.Value);
         RendererManager.Instance.BackgroundMessagingManager.SendCommand(new MaterialsUpdateBatchResult { updateBatchId = command.updateBatchId });
-        GD.Print("Material Update Ended");
     }
 }
