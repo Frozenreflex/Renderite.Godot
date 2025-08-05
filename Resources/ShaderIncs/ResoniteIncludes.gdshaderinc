@@ -15,6 +15,12 @@ float Get2DClipping(vec2 position, vec4 clipRect)
     return inside.x * inside.y;
 }
 
+#ifdef _VERTEXCOLORS
+#define EVR_APPLY_VERTEX_COLORS_FRAG(c) c *= COLOR;
+#else
+#define EVR_APPLY_VERTEX_COLORS_FRAG(c) // no-op
+#endif
+
 #ifdef RECTCLIP
 #define DefineRectClip varying vec2 Vert;
 #else

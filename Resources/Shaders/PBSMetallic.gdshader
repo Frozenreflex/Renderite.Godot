@@ -28,24 +28,32 @@ uniform float _OffsetUnits = 0.0;
 
 void fragment()
 {
-    vec4 albedo = _Color * SampleSTTexture(MainTex, UV);
+    vec2 uv = UV;
+    
+    #ifdef _PARALLAXMAP
+    vec3 view_dir = normalize(normalize(-VERTEX + EYE_OFFSET) * mat3(TANGENT, -BINORMAL, NORMAL));
+    float depth = 1.0 - SampleTexture(ParallaxMap, UV).g;
+    uv = uv - view_dir.xy * depth * _Parallax;
+    #endif
+    
+    vec4 albedo = _Color * SampleSTTexture(MainTex, uv);
     #ifdef _DETAIL_MULX2
-    albedo *= SampleSTTexture(DetailAlbedoMap, UV);
+    albedo *= SampleSTTexture(DetailAlbedoMap, uv);
     #endif
     SetAlpha(albedo.a);
     SetAlphaCutout(_Cutoff);
     ALBEDO = albedo.rgb;
     
     #if defined(_NORMALMAP) || defined(_DETAIL_MULX2)
-    vec3 normals = UnpackScaleNormal(SampleSTTextureData(BumpMap, MainTex, UV), _BumpScale);
+    vec3 normals = UnpackScaleNormal(SampleSTTextureData(BumpMap, MainTex, uv), _BumpScale);
     #if defined(_DETAIL_MULX2)
-    normals = BlendNormals(normals, UnpackScaleNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, UV), _DetailNormalMapScale));
+    normals = BlendNormals(normals, UnpackScaleNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, uv), _DetailNormalMapScale));
     #endif
     NORMAL_MAP = normals;
     #endif
     
     #ifdef _METALLICGLOSSMAP
-    vec4 metallicGloss = SampleSTTextureData(MetallicGlossMap, MainTex, UV);
+    vec4 metallicGloss = SampleSTTextureData(MetallicGlossMap, MainTex, uv);
     METALLIC = metallicGloss.r * _Metallic;
     ROUGHNESS = 1.0 - (metallicGloss.a * _Glossiness);
     #else
@@ -54,7 +62,7 @@ void fragment()
     #endif
 
     #ifdef _EMISSION
-    vec3 emissionColor = (_EmissionColor * SampleSTTextureData(EmissionMap, MainTex, UV)).rgb;
+    vec3 emissionColor = (_EmissionColor * SampleSTTextureData(EmissionMap, MainTex, uv)).rgb;
     EMISSION = emissionColor;
     #endif
 }

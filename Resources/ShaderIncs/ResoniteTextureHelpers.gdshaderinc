@@ -63,6 +63,54 @@ vec2 WrapCoordinates(vec2 uv, int flags)
 
     return vec2(x, y);
 }
+
+#define fmod(x, y) (x - y * trunc(x/y))
+
+vec2 PolarUV(vec2 rawUv, float radiusPow)
+{
+	const float ANGLE_LENGTH = (3.141592653589 * 2.0);
+	const float DIV_ANGLE = 1.0 / ANGLE_LENGTH;
+
+	float radius = pow(length(rawUv), radiusPow);
+	float angle = atan(rawUv.x, rawUv.y) + ANGLE_LENGTH * 0.5;
+
+	return vec2(angle * DIV_ANGLE, radius);
+}
+vec2 TransformPolarMapping(vec2 polarUv, vec4 tex_ST/*, out vec2 uvddx, out vec2 uvddy*/)
+{
+	polarUv = polarUv * tex_ST.xy + tex_ST.zw;
+    /*
+	float x0 = polarUv.x;
+	float x1 = fmod(abs(polarUv.x) + 0.5, 1.0);
+
+	vec2 coord0 = vec2(x0, polarUv.y);
+	vec2 coord1 = vec2(x1, polarUv.y);
+
+	vec2 uvddx0 = dFdx(coord0);
+	vec2 uvddy0 = dFdy(coord0);
+	vec2 uvddx1 = dFdx(coord1);
+	vec2 uvddy1 = dFdy(coord1);
+
+	uvddx = uvddx0;
+	uvddy = uvddy0;
+
+	float l0 = length(uvddx0) + length(uvddy0);
+	float l1 = length(uvddx1) + length(uvddy1);
+
+	if (l1 < l0)
+	{
+		uvddx = uvddx1;
+		uvddy = uvddy1;
+	}
+    */
+
+	return polarUv;
+}
+vec2 PolarMapping(vec2 rawUv, vec4 tex_ST, float radiusPow/*, out vec2 uvddx, out vec2 uvddy*/)
+{
+	rawUv = PolarUV(rawUv, radiusPow);
+	return TransformPolarMapping(rawUv, tex_ST/*, uvddx, uvddy*/);
+}
 vec2 TransformTex(vec2 tex, vec4 offset)
 {
 	return tex * offset.xy + offset.zw;

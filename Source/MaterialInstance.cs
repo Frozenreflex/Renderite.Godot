@@ -39,6 +39,13 @@ public class MaterialInstance
     public bool UseBlendMode;
     private void UpdateBlendMode()
     {
+        //format: MaterialRenderType, SrcBlendProp, DstBlendProp
+        //Opaque = Opaque, 1, 0
+        //Cutout = TransparentCutout, 1, 0
+        //Alpha = Transparent, 5, 10
+        //Transparent = Transparent, 1, 10
+        //Additive = Transparent, 1, 1
+        //Multiply = Transparent, 2, 0
         if (!UseBlendMode) return;
         //for some reason, resonite still uses unity's frankly shit blending system, so we have to convert it here
         ShaderVariant variant;
@@ -63,6 +70,7 @@ public class MaterialInstance
             }
         }
         if ((Variant & ShaderVariant.BlendModeMask) == variant) return;
+        //GD.Print($"Changing blend mode: {variant}");
         ChangeBaseShader(variant, ShaderVariant.BlendModeMask);
     }
     public void SetValue(StringName name, Variant value) => RenderingServer.MaterialSetParam(MaterialRid, name, value);
@@ -134,9 +142,9 @@ public class MaterialInstance
     public void ChangeBaseShader(ShaderVariant value, ShaderVariant mask)
     {
         var oldVariant = Variant;
-        var newVariant = (Variant & (~mask)) & (value & mask);
+        var newVariant = (Variant & (~mask)) | (value & mask);
         if (oldVariant == newVariant) return;
-        GD.Print($"Changing shader variant. Old: {oldVariant:X} New: {newVariant:X}");
+        //GD.Print($"Changing shader variant. Old: {oldVariant:X} New: {newVariant:X}");
         Variant = newVariant;
         RenderingServer.MaterialSetShader(MaterialRid, Shader.GetShader(Variant));
         Shader.Return(oldVariant);
