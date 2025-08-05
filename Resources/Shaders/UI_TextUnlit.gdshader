@@ -27,9 +27,17 @@ float median(float r, float g, float b)
 
 void fragment()
 {
+    vec4 c = vec4(1.0);
+
     vec4 atlasColor = SampleTexture(FontAtlas, UV);
+    #if defined(MSDF) || defined(SDF)
     vec2 msdfUnit = _Range.xy;
+    #if defined(MSDF)
     float sigDist = median(atlasColor.r, atlasColor.g, atlasColor.b) - 0.5;
+    #elif defined(SDF)
+    float sigDist = atlasColor.a - 0.5;
+    #endif
+
     //sigDist += _FaceDilate + NORMAL.x;
 
     float antiAliasing = dot(msdfUnit, 0.5 / fwidth(UV));
@@ -41,17 +49,25 @@ void fragment()
 
     vec4 fillColor = _TintColor * COLOR;
 
+    #ifdef OUTLINE
     float outlineDist = sigDist - (_OutlineSize/* + NORMAL.y*/);
     float outlineLerp = lerp(outlineDist * antiAliasing, outlineDist, _FaceSoftness);
-
     outlineLerp = saturate(outlineLerp + 0.5);
-
     fillColor = lerp(_OutlineColor * vec4(1,1,1,COLOR.a), fillColor, outlineLerp);
+    #endif
 
-    vec4 c = lerp(_BackgroundColor * COLOR, fillColor, glyphLerp);
-    ALBEDO = c.rgb;
-    SetAlpha(c.a);
+    c = lerp(_BackgroundColor * COLOR, fillColor, glyphLerp);
+    #endif
+
+    #if defined(RASTER)
+    c = atlasColor * COLOR;
+
+    clip(c.a - 0.001);
+    #endif
+
     /*
+    #ifdef OVERLAY
+
     float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
     float partZ = i.projPos.z;
 
@@ -59,5 +75,10 @@ void fragment()
     {
         c *= _OverlayTint;
     }
+
+    #endif
     */
+
+    ALBEDO = c.rgb;
+    SetAlpha(c.a);
 }

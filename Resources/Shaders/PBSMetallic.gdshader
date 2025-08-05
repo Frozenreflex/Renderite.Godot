@@ -28,7 +28,7 @@ uniform float _OffsetUnits = 0.0;
 
 void fragment()
 {
-    vec4 albedo = _Color * SampleSTTexture(MainTex, UV) 
+    vec4 albedo = _Color * SampleSTTexture(MainTex, UV);
     #ifdef _DETAIL_MULX2
     albedo *= SampleSTTexture(DetailAlbedoMap, UV);
     #endif
