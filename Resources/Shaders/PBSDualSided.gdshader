@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode cull_disabled;
 
 #include "res://Resources/ShaderIncs/ResoniteBlendMode.gdshaderinc"
 #include "res://Resources/ShaderIncs/ResoniteIncludes.gdshaderinc"
@@ -8,39 +9,26 @@ STData(MainTex)
 ColorTexture2DWhite(EmissionMap)
 MapTexture2DZero(BumpMap)
 MapTexture2D(OcclusionMap)
-MapTexture2DZero(ParallaxMap)
 MapTexture2DOne(MetallicGlossMap)
-
-ColorTexture2DWhite(DetailAlbedoMap)
-STData(DetailAlbedoMap)
-MapTexture2DZero(DetailNormalMap)
 
 uniform vec4 _Color = vec4(1,1,1,1);
 uniform float _Metallic = 1.0;
 uniform float _Glossiness = 0.5;
-uniform float _Cutoff = 0.5f;
+uniform float _Cutoff = 0.0f;
 uniform vec4 _EmissionColor = vec4(0,0,0,1);
 uniform float _BumpScale = 1.0;
-uniform float _DetailNormalMapScale = 1.0;
-uniform float _Parallax = 0.02;
 uniform float _OffsetFactor = 0.0;
 uniform float _OffsetUnits = 0.0;
 
 void fragment()
 {
     vec4 albedo = _Color * SampleSTTexture(MainTex, UV);
-    #ifdef _DETAIL_MULX2
-    albedo *= SampleSTTexture(DetailAlbedoMap, UV);
-    #endif
     SetAlpha(albedo.a);
     SetAlphaCutout(_Cutoff);
     ALBEDO = albedo.rgb;
     
-    #if defined(_NORMALMAP) || defined(_DETAIL_MULX2)
+    #if defined(_NORMALMAP)
     vec3 normals = UnpackScaleNormal(SampleSTTextureData(BumpMap, MainTex, UV), _BumpScale);
-    #if defined(_DETAIL_MULX2)
-    normals = BlendNormals(normals, UnpackScaleNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, UV), _DetailNormalMapScale));
-    #endif
     NORMAL_MAP = normals;
     #endif
     
