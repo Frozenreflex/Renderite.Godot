@@ -8,20 +8,23 @@ render_mode unshaded;
 //ColorTexture2DWhite(FontAtlas)
 MapTexture2DOne(FontAtlas)
 
-uniform vec4 _TintColor = vec4(1);
-uniform vec4 _OverlayTint = vec4(1,1,1,0.5);
-uniform vec4 _OutlineColor = vec4(1,1,1,0);
-uniform vec4 _BackgroundColor = vec4(0);
+uniform vec4 _TintColor : source_color = vec4(1);
+uniform vec4 _OverlayTint : source_color = vec4(1,1,1,0.5);
+uniform vec4 _OutlineColor : source_color = vec4(1,1,1,0);
+uniform vec4 _BackgroundColor : source_color = vec4(0);
 uniform vec4 _Range = vec4(0.001, 0.001, 0, 0);
 uniform float _FaceDilate;
 uniform float _FaceSoftness;
 uniform float _OutlineSize;
 uniform vec4 _Rect = vec4(0,0,1,1);
+uniform float _OffsetFactor = 0.0;
+uniform float _OffsetUnits = 0.0;
 
 float median(float r, float g, float b)
 {
 	return max(min(r, g), min(max(r, g), b));
 }
+
 void fragment()
 {
     vec4 atlasColor = SampleTexture(FontAtlas, UV);

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Godot;
 using Renderite.Godot.Source.SharedMemory;
 using Renderite.Shared;
@@ -11,11 +13,22 @@ namespace Renderite.Godot.Source;
 
 public class MaterialManager
 {
+    public const int 
+        SrcBlendProperty = 0,
+        DstBlendProperty = 1,
+        ZTestProperty = 2,
+        OffsetFactorProperty = 3,
+        OffsetUnitsProperty = 4,
+        CullProperty = 5
+        ;
     public static readonly List<StringName> PropertyIdMap = 
     [
         "_SrcBlend",
         "_DstBlend",
         "_ZTest",
+        "_OffsetFactor",
+        "_OffsetUnits",
+        "_Cull",
     ];
 
     public Dictionary<string, ShaderInstance> Shaders = new();
@@ -24,22 +37,27 @@ public class MaterialManager
     
     public void Handle(ShaderUpload command)
     {
-        var shaderName = command.file.Replace(".shader", "");
+        var shaderData = command.file.Split(" ");
+        var variants = shaderData.Skip(1).ToArray();
+        var shaderName = shaderData.First();
 
         var path = $"res://Resources/Shaders/{shaderName}.gdshader";
 
-        if (Shaders.TryGetValue(path, out var s)) ShaderMap[command.assetId] = s;
+        if (Shaders.TryGetValue(command.file, out var s)) ShaderMap[command.assetId] = s;
         else
         {
             var shader = new ShaderInstance();
             if (ResourceLoader.Exists(path))
             {
-                GD.Print($"Loading {path}");
+                GD.Print($"Loading {path} with keywords {(variants.Length > 0 ? string.Join(" ", variants) : "none")}");
                 var baseShader = ResourceLoader.Load<Shader>(path);
-                shader.BaseShader = baseShader.Code;
+                var baseCode = new StringBuilder();
+                foreach (var keyword in variants) baseCode.Append($"#define {keyword}\n");
+                baseCode.Append(baseShader.Code);
+                shader.BaseShader = baseCode.ToString();
             }
             else GD.Print($"Unimplemented: {shaderName}");
-            Shaders[path] = shader;
+            Shaders[command.file] = shader;
             ShaderMap[command.assetId] = shader;
         }
         
@@ -179,21 +197,21 @@ public class MaterialManager
                         switch (propertyId)
                         {
                             //_SrcBlend
-                            case 0:
+                            case SrcBlendProperty:
                             {
                                 materialTarget.UseBlendMode = true;
                                 materialTarget.SourceBlendProp = value;
                                 break;
                             }
                             //_DstBlend
-                            case 1:
+                            case DstBlendProperty:
                             {
                                 materialTarget.UseBlendMode = true;
                                 materialTarget.DestinationBlendProp = value;
                                 break;
                             }
                             //_ZTest
-                            case 2:
+                            case ZTestProperty:
                             {
                                 /*
                                    Less,
@@ -233,12 +251,34 @@ public class MaterialManager
                                 }
                                 break;
                             }
+                            case CullProperty:
+                            {
+                                var asInt = (int)value;
+                                var variantValue = asInt switch
+                                {
+                                    1 => ShaderVariant.CullModeFront,
+                                    2 => ShaderVariant.CullModeBack,
+                                    _ => ShaderVariant.CullModeOff,
+                                };
+                                materialTarget.ChangeBaseShader(variantValue, ShaderVariant.CullModeMask);
+                                break;
+                            }
                             default:
                             {
                                 materialTarget.SetValue(PropertyIdMap[propertyId], value);
                                 break;
                             }
                         }
+                        /*
+                        if (propertyId == OffsetFactorProperty)
+                        {
+                            GD.Print($"Offset factor changed to {value}");
+                        }
+                        else if (propertyId == OffsetUnitsProperty)
+                        {
+                            GD.Print($"Offset units changed to {value}");
+                        }
+                        */
                         break;
                     }
                     case MaterialPropertyUpdateType.SetFloat4:
