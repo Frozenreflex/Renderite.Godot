@@ -37,9 +37,9 @@ void fragment()
     ALBEDO = albedo.rgb;
     
     #if defined(_NORMALMAP) || defined(_DETAIL_MULX2)
-    vec3 normals = ReadNormal(SampleSTTextureData(BumpMap, MainTex, UV)) * _BumpScale;
-    #ifdef _DETAIL_MULX2
-    normals = BlendNormals(normals, ReadNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, UV)) * _DetailNormalMapScale);
+    vec3 normals = UnpackScaleNormal(SampleSTTextureData(BumpMap, MainTex, UV), _BumpScale);
+    #if defined(_DETAIL_MULX2)
+    normals = BlendNormals(normals, UnpackScaleNormal(SampleSTTextureData(DetailNormalMap, DetailAlbedoMap, UV), _DetailNormalMapScale));
     #endif
     NORMAL_MAP = normals;
     #endif

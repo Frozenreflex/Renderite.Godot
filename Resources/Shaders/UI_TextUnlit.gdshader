@@ -25,8 +25,17 @@ float median(float r, float g, float b)
 	return max(min(r, g), min(max(r, g), b));
 }
 
+DefineRectClip
+
+void vertex()
+{
+    StartRectClip
+}
+
 void fragment()
 {
+    DoRectClip(_Rect);
+
     vec4 c = vec4(1.0);
 
     vec4 atlasColor = SampleTexture(FontAtlas, UV);

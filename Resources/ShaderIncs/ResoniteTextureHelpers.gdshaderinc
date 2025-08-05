@@ -91,14 +91,26 @@ vec4 _SampleSTTexture(sampler2D nearest, sampler2D anisotropic, sampler2D linear
     return _SampleTexture(nearest, anisotropic, linear, TransformTex(uv, st), flags);
 }
 
-vec3 ReadNormal(vec4 value)
+vec3 UnpackScaleNormal(vec4 packednormal, float bumpScale)
 {
-    //resonite packs normals in a way that unity wants them
-    //TODO: is this correct? i saw something that said X = A and Y = R, but another that said X = R and Y = A
-    float x = (value.r * 2.0) - 1.0;
-    float y = (value.a * 2.0) - 1.0;
-    float z = sqrt(1.0 - (x*x + y*y));
-    return vec3(x,y,z);
+    //TODO: this is ripped straight from unity, what the fuck does UNITY_NO_DXT5nm do
+    #if defined(UNITY_NO_DXT5nm)
+        half3 normal = packednormal.xyz * 2 - 1;
+        #if (SHADER_TARGET >= 30)
+            // SM2.0: instruction count limitation
+            // SM2.0: normal scaler is not supported
+            normal.xy *= bumpScale;
+        #endif
+        return normal;
+    #else
+        packednormal.x *= packednormal.w;
+
+        vec3 normal;
+        normal.xy = (packednormal.xy * 2.0 - 1.0);
+        normal.xy *= bumpScale;
+        normal.z = sqrt(1.0 - clamp(dot(normal.xy, normal.xy), 0.0, 1.0));
+        return normal;
+    #endif
 }
 
 vec3 BlendNormals(vec3 n1, vec3 n2)
