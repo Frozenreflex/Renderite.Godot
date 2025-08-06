@@ -22,8 +22,6 @@ public class MeshInstanceManager : AssetSceneInstanceManager
             OnMeshChanged();
         }
     }
-    public RenderingServer.ShadowCastingSetting ShadowCastingMode = (RenderingServer.ShadowCastingSetting)(-1);
-
     public MaterialInstance[] Materials = [];
 
     public void UpdateMaterials()
@@ -36,6 +34,16 @@ public class MeshInstanceManager : AssetSceneInstanceManager
             RenderingServer.InstanceSetSurfaceOverrideMaterial(InstanceRid, i, mat?.MaterialRid ?? new Rid());
         }
     }
+    public RenderingServer.ShadowCastingSetting ShadowCasting
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            RenderingServer.InstanceGeometrySetCastShadowsSetting(InstanceRid, field);
+        }
+    } = (RenderingServer.ShadowCastingSetting)(-1);
     
     protected virtual void OnMeshChanged()
     {

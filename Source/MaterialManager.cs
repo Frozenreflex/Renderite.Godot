@@ -49,7 +49,7 @@ public class MaterialManager
             var shader = new ShaderInstance();
             if (ResourceLoader.Exists(path))
             {
-                GD.Print($"Loading {path} with keywords {(variants.Length > 0 ? string.Join(" ", variants) : "none")}");
+                //GD.Print($"Loading {path} with keywords {(variants.Length > 0 ? string.Join(" ", variants) : "none")}");
                 var baseShader = ResourceLoader.Load<Shader>(path);
                 var baseCode = new StringBuilder();
                 foreach (var keyword in variants) baseCode.Append($"#define {keyword}\n");
@@ -251,6 +251,13 @@ public class MaterialManager
                                 }
                                 break;
                             }
+                            /*
+                            case OffsetUnitsProperty:
+                            {
+                                materialTarget.RenderPriority = (int)value;
+                                break;
+                            }
+                            */
                             case CullProperty:
                             {
                                 var asInt = (int)value;

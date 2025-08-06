@@ -258,14 +258,9 @@ public partial class RenderSpace : Node3D
                 var mesh = list[meshState.renderableIndex];
                 var assetId = meshState.meshAssetId;
                 mesh.Mesh = RendererManager.Instance.AssetManager.GetMesh(assetId);
-                var shadowMode = meshState.shadowCastMode.ToGodot();
-                if (mesh.ShadowCastingMode != shadowMode)
-                {
-                    RenderingServer.InstanceGeometrySetCastShadowsSetting(mesh.InstanceRid, shadowMode);
-                    mesh.ShadowCastingMode = shadowMode;
-                }
+                mesh.ShadowCasting = meshState.shadowCastMode.ToGodot();
                 //MotionVectorGenerationMode is ignored, seems unity specific
-                //RenderingServer.InstanceSetPivotData(mesh.InstanceRid, float.Epsilon * 10f * meshState.sortingOrder, true);
+                //RenderingServer.InstanceSetPivotData(mesh.InstanceRid, 1e-16f * meshState.sortingOrder, true);
                 //TODO: sorting order
                 //godot has a sorting offset, but this is a float that changes the depth of the fragment
                 if (meshState.materialCount >= 0)

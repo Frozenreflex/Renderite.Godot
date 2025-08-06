@@ -37,6 +37,17 @@ public class MaterialInstance
         }
     }
     public bool UseBlendMode;
+
+    public int RenderPriority
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            RenderingServer.MaterialSetRenderPriority(MaterialRid, value);
+        }
+    }
     private void UpdateBlendMode()
     {
         //format: MaterialRenderType, SrcBlendProp, DstBlendProp

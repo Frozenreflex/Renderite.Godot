@@ -76,7 +76,7 @@ void fragment()
     #ifdef OVERLAY
     float sceneZ = SceneLinearDepth(depthTexture);
     float partZ = FragmentDepth;
-    if (partZ > sceneZ) { color *= _OverlayTint; }
+    if (partZ > sceneZ) { c *= _OverlayTint; }
     #endif
 
     ALBEDO = c.rgb;
