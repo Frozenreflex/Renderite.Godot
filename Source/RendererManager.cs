@@ -169,12 +169,15 @@ public partial class RendererManager : Node
 
             // Send some fake data for now
             SharedMemory = new SharedMemoryAccessor(_initData.sharedMemoryPrefix);
-            RendererInitResult rendererInitResult = new RendererInitResult();
-            rendererInitResult.actualOutputDevice = HeadOutputManager.Instance.IsXR ? HeadOutputDevice.SteamVR : HeadOutputDevice.Screen; // This is a lie, no SteamVR to be found here
-            rendererInitResult.stereoRenderingMode = "MultiPass";
-            rendererInitResult.maxTextureSize = 16384;
-            rendererInitResult.isGPUTexturePOTByteAligned = true;
-            rendererInitResult.supportedTextureFormats = Enum.GetValues<TextureFormat>().Where(i => i.Supported()).ToList();
+            RendererInitResult rendererInitResult = new RendererInitResult
+            {
+                rendererIdentifier = "Renderite.Godot",
+                actualOutputDevice = HeadOutputManager.Instance.IsXR ? HeadOutputDevice.SteamVR : HeadOutputDevice.Screen, // This is a lie, no SteamVR to be found here
+                stereoRenderingMode = "MultiPass",
+                maxTextureSize = 16384,
+                isGPUTexturePOTByteAligned = true,
+                supportedTextureFormats = Enum.GetValues<TextureFormat>().Where(i => i.Supported()).ToList()
+            };
             PrimaryMessagingManager.SendCommand(rendererInitResult);
         }
         else
