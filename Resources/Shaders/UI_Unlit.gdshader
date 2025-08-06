@@ -20,6 +20,10 @@ uniform float _OffsetFactor = 0.0;
 uniform float _OffsetUnits = 0.0;
 uniform vec4 _Rect = vec4(0,0,1,1);
 
+#ifdef OVERLAY
+uniform sampler2D depthTexture : hint_depth_texture;
+#endif
+
 DefineRectClip
 
 #ifdef TEXTURE_LERPCOLOR
@@ -73,6 +77,12 @@ void fragment()
     
     #if defined(ALPHACLIP) && !defined(_MASK_TEXTURE_CLIP)
     clip(color.a - _Cutoff);
+    #endif
+    
+    #ifdef OVERLAY
+    float sceneZ = SceneLinearDepth(depthTexture);
+    float partZ = FragmentDepth;
+    if (partZ > sceneZ) { color *= _OverlayTint; }
     #endif
     
     ALBEDO = color.rgb;

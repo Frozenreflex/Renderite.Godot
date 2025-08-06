@@ -8,12 +8,29 @@
     vec3 view_pos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; \
     view_pos.z -= _OffsetUnits * 0.1f; \
     VERTEX = (inverse(MODELVIEW_MATRIX) * vec4(view_pos, 1.0)).xyz;
-    
+
+float median(float r, float g, float b)
+{
+	return max(min(r, g), min(max(r, g), b));
+}
+
 float Get2DClipping(vec2 position, vec4 clipRect)
 {
     vec2 inside = step(clipRect.xy, position.xy) * step(position.xy, clipRect.zw);
     return inside.x * inside.y;
 }
+
+float _SceneLinearDepth(float depthSample, vec2 screenUv, mat4 invProjectionMatrix, vec3 vertex)
+{
+    vec3 ndc = vec3(screenUv * 2.0 - 1.0, depthSample);
+    vec4 view = invProjectionMatrix * vec4(ndc, 1.0);
+    view.xyz /= view.w;
+    
+    return -view.z;
+}
+
+#define SceneLinearDepth(depth) _SceneLinearDepth(texture(depth, SCREEN_UV).x, SCREEN_UV, INV_PROJECTION_MATRIX, VERTEX)
+#define FragmentDepth (-VERTEX.z)
 
 #ifdef _VERTEXCOLORS
 #define EVR_APPLY_VERTEX_COLORS_FRAG(c) c *= COLOR;
