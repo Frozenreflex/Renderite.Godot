@@ -19,7 +19,8 @@ public class MaterialManager
         ZTestProperty = 2,
         OffsetFactorProperty = 3,
         OffsetUnitsProperty = 4,
-        CullProperty = 5
+        CullProperty = 5,
+        ZWriteProperty = 6
         ;
     public static readonly List<StringName> PropertyIdMap = 
     [
@@ -29,6 +30,7 @@ public class MaterialManager
         "_OffsetFactor",
         "_OffsetUnits",
         "_Cull",
+        "_ZWrite",
     ];
 
     public Dictionary<string, ShaderInstance> Shaders = new();
@@ -268,6 +270,13 @@ public class MaterialManager
                                     _ => ShaderVariant.CullModeOff,
                                 };
                                 materialTarget.ChangeBaseShader(variantValue, ShaderVariant.CullModeMask);
+                                break;
+                            }
+                            case ZWriteProperty:
+                            {
+                                var asInt = (int)value;
+                                var variantValue = asInt == 1 ? ShaderVariant.ZWriteOff : ShaderVariant.ZWriteOn;
+                                materialTarget.ChangeBaseShader(variantValue, ShaderVariant.ZWriteMask);
                                 break;
                             }
                             default:

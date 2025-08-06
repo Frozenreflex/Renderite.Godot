@@ -23,12 +23,14 @@ public enum ShaderVariant
     CullModeBack  = 0b00000000_00000000_00000000_00010000,
     CullModeOff   = 0b00000000_00000000_00000000_00011000,
     
-    
-    
     ZTestMask = 0b00000000_00000000_00000000_01100000,
     ZTestDefault = 0,
     ZTestInvert = 0b00000000_00000000_00000000_00100000,
     ZTestDisable = 0b00000000_00000000_00000000_01000000,
+    
+    ZWriteMask = 0b00000000_00000000_00000001_10000000,
+    ZWriteOn = 0b00000000_00000000_00000000_10000000,
+    ZWriteOff = 0b00000000_00000000_00000001_00000000,
 }
 public class ShaderInstance
 {
@@ -82,6 +84,9 @@ public class ShaderInstance
                 //depth test variant
                 var depth = variant & ShaderVariant.ZTestMask;
                 if (depth > 0) code.Append(depth is ShaderVariant.ZTestInvert ? "#define ZTEST_MODE 1\n" : "#define ZTEST_MODE 2\n");
+
+                var zwrite = variant & ShaderVariant.ZWriteMask;
+                if (zwrite > 0) code.Append(zwrite is ShaderVariant.ZWriteOn ? "#define ZWRITE_MODE 0" : "#define ZWRITE_MODE 1");
 
                 code.Append(BaseShader);
                 value.Shader.Code = code.ToString();

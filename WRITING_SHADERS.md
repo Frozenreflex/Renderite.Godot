@@ -205,4 +205,29 @@ To sample a texture using it's corresponding ST data, use ``SampleSTTexture(T, u
 
 To sample a texture using a different texture's ST data, such as a normal map using an albedo texture's ST, use ``SampleSTTextureData(T, data, uv)``, where ``data`` is the name of the texture with ST data.
 
-### 
+### ShaderLab command emulation
+
+Some ShaderLab commands aren't straightforward to emulate, so if one of these parameters or code blocks is used in a Unity shader, use these includes instead.
+
+| Parameter                      | Code Block                      | Include            |
+|--------------------------------|---------------------------------|--------------------|
+| ``_SrcBlend`` or ``_DstBlend`` | ``Blend[_SrcBlend][_DstBlend]`` | ResoniteBlendMode  |
+| ``_Cull``                      | ``Cull[_Cull]``                 | ResoniteCullMode   |
+| ``_ZTest``                     | ``ZTest[_ZTest]``               | ResoniteZTestMode  |
+| ``_ZWrite``                    | ``ZWrite[_ZWrite]``             | ResoniteZWriteMode |
+
+#### ColorMask
+
+As of now, this is unimplemented.
+
+### Rect Clipping
+
+UI and a few other types of shaders support rect clipping. A complete implementation can be found inside of ``UI_Unlit``.
+
+To implement this, first, add a ``vec4`` uniform, in most cases it will be called ``_Rect``, but it may not always be.
+
+Underneath this uniform, add ``DefineRectClip``, no semicolon.
+
+If the shader does not have a vertex function, add one, and put ``StartRectClip`` in it, again no semicolon.
+
+Finally, within the fragment function, at the very start, call ``DoRectClip(rect);``, where ``rect`` is the name of our uniform from before.
