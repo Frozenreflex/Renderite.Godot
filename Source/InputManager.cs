@@ -33,6 +33,13 @@ public partial class InputManager : Node
                 _heldKeys.Add(keyDown.Keycode.ToRenderite(keyDown.Location));
                 if (keyDown.Unicode > 0)
                     _typeDelta.Append((char)keyDown.Unicode);
+                else
+                {
+                    if (keyDown.Keycode == global::Godot.Key.Backspace)
+                        _typeDelta.Append('\b');
+                    else if (keyDown.Keycode == global::Godot.Key.Enter)
+                        _typeDelta.Append('\n');
+                }
                 break;
 
             case InputEventKey keyUp:
