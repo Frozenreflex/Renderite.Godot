@@ -33,6 +33,13 @@ public partial class InputManager : Node
                 _heldKeys.Add(keyDown.Keycode.ToRenderite(keyDown.Location));
                 if (keyDown.Unicode > 0)
                     _typeDelta.Append((char)keyDown.Unicode);
+                else
+                {
+                    if (keyDown.Keycode == global::Godot.Key.Backspace)
+                        _typeDelta.Append('\b');
+                    else if (keyDown.Keycode == global::Godot.Key.Enter)
+                        _typeDelta.Append('\n');
+                }
                 break;
 
             case InputEventKey keyUp:
@@ -102,8 +109,12 @@ public partial class InputManager : Node
     {
         var newLockPos = state.lockCursorPosition?.ToGodot();
 
-        //if (newLockPos.HasValue)
-        //Input.WarpMouse(newLockPos.Value);
+        if (newLockPos.HasValue)
+        {
+            var currentPos = GetViewport().GetMousePosition() * GetViewport().GetScreenTransform();
+            _mouseDelta -= currentPos - (Vector2)newLockPos;
+            Input.WarpMouse(newLockPos.Value);
+        }
 
         if (state.lockCursor == _lastMouseLocked && newLockPos == _lastLockPosition)
             return;
@@ -121,11 +132,12 @@ public partial class InputManager : Node
         else
         {
             Input.MouseMode = Input.MouseModeEnum.Visible;
-            //if (previousLockPos.HasValue)
-            //Input.WarpMouse(previousLockPos.Value);
+            if (previousLockPos.HasValue)
+            {
+                var currentPos = GetViewport().GetMousePosition() * GetViewport().GetScreenTransform();
+                _mouseDelta -= currentPos - (Vector2)previousLockPos.Value;
+                Input.WarpMouse(previousLockPos.Value);
+            }
         }
-        // TODO: verify this all works correctly
-        // in fact something already isn't working correctly from what I can tell,
-        // grabbing things and holding e to rotate snaps back for some reason
     }
 }
