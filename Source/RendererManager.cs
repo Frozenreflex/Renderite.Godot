@@ -34,7 +34,7 @@ public partial class RendererManager : Node
         string queueName = null;
         var queueCapacity = 8388608;
 
-        var args = OS.GetCmdlineUserArgs();
+        var args = OS.GetCmdlineArgs();
 
         for (var i = 0; i < args.Length; i++)
         {
