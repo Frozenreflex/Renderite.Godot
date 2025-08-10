@@ -31,6 +31,10 @@ window/vsync/vsync_mode=0
 
 project/assembly_name="Renderite.Godot"
 
+[editor]
+
+run/main_run_args="--resoniteargs -LoadAssembly Libraries/ResoniteModLoader.dll -DoNotAutoLaunchHome -SkipIntroTutorial"
+
 [gui]
 
 theme/default_font_multichannel_signed_distance_field=true
@@ -42,6 +46,7 @@ theme/default_font_multichannel_signed_distance_field=true
 
 [xr]
 
+openxr/enabled=true
 openxr/default_action_map="uid://cwgi2fq7yqn2k"
 openxr/startup_alert=false
 openxr/extensions/hand_tracking=true
