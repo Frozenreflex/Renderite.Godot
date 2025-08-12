@@ -11,8 +11,8 @@ If you have a Resonite prerelease install inside the default steamapps directory
 
 You can also change the dotnet executable with `--executable <path>`. Resonite args are specified after `--resoniteargs`.
 
-### Run Resonite.dll separately
-By default Renderite.Godot handles launching Resonite for you. If you'd like to launch it independently you can use `--noautolaunch`, which will simply print out the shmprefix you have to give to Resonite.dll:
+### Run Renderite.Host.dll separately
+By default Renderite.Godot handles launching Resonite for you. If you'd like to launch it independently you can use `--noautolaunch`, which will simply print out the shmprefix you have to give to Renderite.Host.dll:
 ```
-dotnet Resonite.dll -shmprefix <prefix here> -LoadAssembly Libraries/ResoniteModLoader.dll
+dotnet Renderite.Host.dll -shmprefix <prefix here> -LoadAssembly Libraries/ResoniteModLoader.dll
 ```

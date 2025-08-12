@@ -80,7 +80,7 @@ public partial class RendererManager : Node
         if (launchResonite)
         {
             GD.Print($"Resonite path: {resonitePath}");
-            var dllPath = System.IO.Path.Combine(resonitePath, "Resonite.dll");
+            var dllPath = System.IO.Path.Combine(resonitePath, "Renderite.Host.dll");
             var resoniteArgs = args.SkipWhile(arg => arg.ToLower() != "--resoniteargs").Skip(1).ToArray().Join(" ");
             var startInfo = new ProcessStartInfo
             {
@@ -116,7 +116,7 @@ public partial class RendererManager : Node
         }
         else
         {
-            GD.Print($"Resonite auto launch disabled, please run Resonite.dll manually with -shmprefix {shmPrefix}");
+            GD.Print($"Resonite auto launch disabled, please run Renderite.Host.dll manually with -shmprefix {shmPrefix}");
         }
     }
     public override void _Notification(int what)
