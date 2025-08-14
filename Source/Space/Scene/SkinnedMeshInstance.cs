@@ -4,15 +4,15 @@ using Renderite.Godot.Source.Helpers;
 
 namespace Renderite.Godot.Source.Scene;
 
-public class SkinnedMeshInstanceManager : MeshInstanceManager
+public class SkinnedMeshInstance : MeshInstance
 {
     public class Bone
     {
         public TransformNode Node;
         public int BoneIndex;
-        public SkinnedMeshInstanceManager Manager;
+        public SkinnedMeshInstance Manager;
 
-        public Bone(TransformNode node, int bone, SkinnedMeshInstanceManager manager)
+        public Bone(TransformNode node, int bone, SkinnedMeshInstance manager)
         {
             Node = node;
             BoneIndex = bone;

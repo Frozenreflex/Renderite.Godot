@@ -30,7 +30,6 @@ public class MaterialManager
         "_OffsetFactor",
         "_OffsetUnits",
         "_Cull",
-        "_ZWrite",
     ];
 
     public Dictionary<string, ShaderInstance> Shaders = new();

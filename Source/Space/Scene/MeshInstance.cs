@@ -4,7 +4,7 @@ using Godot;
 
 namespace Renderite.Godot.Source.Scene;
 
-public class MeshInstanceManager : AssetSceneInstanceManager
+public class MeshInstance : AssetSceneInstance
 {
     public MeshAsset Mesh
     {

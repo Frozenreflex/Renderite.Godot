@@ -16,10 +16,7 @@ public partial class RendererManager : Node
 {
     public static RendererManager Instance;
 
-    private Process _resoniteProcess;
-    private bool _resoniteQuit;
-    private ISubscriber _bootstrapperIn;
-    private IPublisher _bootstrapperOut;
+    private Bootstrapper _bootstrapper;
     private bool _bootstrapped;
 
     public SharedMemoryAccessor SharedMemory { get; private set; }
@@ -42,19 +39,17 @@ public partial class RendererManager : Node
         var args = OS.GetCmdlineArgs();
 
         GD.Print("Starting...");
-        const string safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var shmPrefix = new string(Enumerable.Range(0, 16)
-            .Select(_ => safeChars[Random.Shared.Next(safeChars.Length)])
-            .ToArray());
-        _bootstrapperIn = new QueueFactory().CreateSubscriber(new QueueOptions(shmPrefix + ".bootstrapper_in", 8192L, deleteOnDispose: true));
-        _bootstrapperOut = new QueueFactory().CreatePublisher(new QueueOptions(shmPrefix + ".bootstrapper_out", 8192L, deleteOnDispose: true));
-        GD.Print("Bootstrapper queue created.");
+        _bootstrapper = new Bootstrapper(() =>
+        {
+            GD.Print("Quitting because the Resonite process quit.");
+            GetTree().CallDeferred("quit");
+        });
 
-        var resonitePath = OS.HasFeature("windows") ?
-                           @"C:\Program Files (x86)\Steam\steamapps\common\Resonite\" :
-                           System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".local", "share", "Steam", "steamapps", "common", "Resonite");
-        var executable = "dotnet";
-
+        var resonitePath = OS.HasFeature("windows")
+            ? @"C:\Program Files (x86)\Steam\steamapps\common\Resonite\"
+            : System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+                ".local", "share", "Steam", "steamapps", "common", "Resonite");
+        var dotnetExecutable = "dotnet";
         var launchResonite = true;
         for (var i = 0; i < args.Length; i++)
         {
@@ -69,7 +64,7 @@ public partial class RendererManager : Node
             {
                 var next = args[i + 1];
                 i++;
-                executable = next;
+                dotnetExecutable = next;
             }
             else if (arg.Contains("noautolaunch"))
             {
@@ -77,48 +72,15 @@ public partial class RendererManager : Node
             }
         }
 
-        if (launchResonite)
+        if (!launchResonite)
         {
-            GD.Print($"Resonite path: {resonitePath}");
-            var dllPath = System.IO.Path.Combine(resonitePath, "Renderite.Host.dll");
-            var resoniteArgs = args.SkipWhile(arg => arg.ToLower() != "--resoniteargs").Skip(1).ToArray().Join(" ");
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = executable,
-                Arguments = $"{dllPath} -shmprefix {shmPrefix} {resoniteArgs}",
-                WorkingDirectory = resonitePath,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            _resoniteProcess = new Process
-            {
-                StartInfo = startInfo,
-                EnableRaisingEvents = true
-            };
-
-            _resoniteProcess.OutputDataReceived += (sender, e) => { if (e.Data != null) GD.Print($"[Resonite] {e.Data}"); };
-            _resoniteProcess.ErrorDataReceived += (sender, e) => { if (e.Data != null) GD.PrintErr($"[Resonite] {e.Data}"); };
-            _resoniteProcess.Exited += (sender, e) =>
-            {
-                _resoniteQuit = true;
-                GD.Print($"Resonite process quit with code {_resoniteProcess.ExitCode}, we're going down too.");
-                GetTree().CallDeferred("quit");
-            };
-            GetTree().AutoAcceptQuit = false;
-
-            GD.Print($"Starting Resonite with args {startInfo.Arguments}");
-            _resoniteProcess.Start();
-            _resoniteProcess.BeginOutputReadLine();
-            _resoniteProcess.BeginErrorReadLine();
+            GD.Print($"Resonite auto launch disabled, please run Renderite.Host.dll manually with -shmprefix {_bootstrapper.ShmPrefix}");
+            return;
         }
-        else
-        {
-            GD.Print($"Resonite auto launch disabled, please run Renderite.Host.dll manually with -shmprefix {shmPrefix}");
-        }
+        var resoniteArgs = args.SkipWhile(arg => arg.ToLower() != "--resoniteargs").Skip(1).ToArray().Join(" ");
+        _bootstrapper.LaunchResonite(resonitePath, dotnetExecutable, resoniteArgs);
     }
+
     public override void _Notification(int what)
     {
         if (what == NotificationWMCloseRequest)
@@ -127,20 +89,15 @@ public partial class RendererManager : Node
             PrimaryMessagingManager.SendCommand(new RendererShutdownRequest());
         }
     }
+
     public override void _Process(double delta)
     {
         base._Process(delta);
 
         if (!_initFinalized)
         {
-            if (!_bootstrapped && _bootstrapperIn.TryDequeue(CancellationToken.None, out var result))
+            if (!_bootstrapped && _bootstrapper.TryGetQueueConnection(out var queueName, out var queueCapacity))
             {
-                var queueArgs = Encoding.UTF8.GetString(result.Span).Split(' ');
-                var queueName = queueArgs[1];
-                var queueCapacity = long.Parse(queueArgs[3]);
-
-                _bootstrapperOut.TryEnqueue(Encoding.UTF8.GetBytes("RENDERITE_STARTED:" + System.Environment.ProcessId));
-
                 GD.Print($"Received queue info, connecting to {queueName} (capacity: {queueCapacity})");
                 PrimaryMessagingManager = new MessagingManager(PackerMemoryPool.Instance);
                 PrimaryMessagingManager.CommandHandler = HandleRenderCommand;
@@ -167,7 +124,7 @@ public partial class RendererManager : Node
 
         while (_frameData == null)
         {
-            if (_resoniteQuit)
+            if (_bootstrapper.ResoniteQuit)
                 return;
         } // Maybe don't tight loop here?
 
@@ -180,6 +137,7 @@ public partial class RendererManager : Node
 
         //DebugDraw();
     }
+
     private void HandleFrameUpdate(FrameSubmitData submitData)
     {
         LastFrameIndex = submitData.frameIndex;
@@ -196,6 +154,7 @@ public partial class RendererManager : Node
                 AddChild(renderSpace);
                 Spaces.Add(spaceData.id, renderSpace);
             }
+
             renderSpace.HandleUpdate(spaceData);
             if (renderSpace.IsActive && !renderSpace.IsOverlay)
                 activeRenderSpace = activeRenderSpace == null
@@ -217,6 +176,7 @@ public partial class RendererManager : Node
         if (submitData.outputState is not null)
             InputManager.Instance.Handle(submitData.outputState);
     }
+
     private void HandleRenderCommand(RendererCommand command)
     {
         if (command is KeepAlive) return;
@@ -236,7 +196,10 @@ public partial class RendererManager : Node
             RendererInitResult rendererInitResult = new RendererInitResult
             {
                 rendererIdentifier = "Renderite.Godot",
-                actualOutputDevice = HeadOutputManager.Instance.IsXR ? HeadOutputDevice.SteamVR : HeadOutputDevice.Screen, // This is a lie, no SteamVR to be found here
+                actualOutputDevice =
+                    HeadOutputManager.Instance.IsXR
+                        ? HeadOutputDevice.SteamVR
+                        : HeadOutputDevice.Screen, // This is a lie, no SteamVR to be found here
                 stereoRenderingMode = "MultiPass",
                 maxTextureSize = 16384,
                 isGPUTexturePOTByteAligned = true,
@@ -262,10 +225,12 @@ public partial class RendererManager : Node
             }
         }
     }
+
     private void HandleMessagingFailure(Exception ex)
     {
         GD.Print("Exception in messaging system:\n" + ex);
     }
+
     private void DebugDraw()
     {
         const int textSize = 3;
@@ -273,15 +238,20 @@ public partial class RendererManager : Node
         {
             foreach (var (skinnedMesh, index) in space.SkinnedMeshes.WithIndex())
             {
-                DebugDraw3D.DrawText(skinnedMesh.Base.GlobalPosition, $"Space {spaceIndex}\nSkinned Mesh {index}\n{skinnedMesh.Mesh is not null}", textSize);
+                DebugDraw3D.DrawText(skinnedMesh.Base.GlobalPosition,
+                    $"Space {spaceIndex}\nSkinned Mesh {index}\n{skinnedMesh.Mesh is not null}", textSize);
                 foreach (var bone in skinnedMesh.TrackedBones)
                 {
-                    if (bone.Node is not null) DebugDraw3D.DrawText(bone.Node.GlobalPosition, $"Space {spaceIndex}\nSkinned Mesh {index}\nBone {bone.BoneIndex}", textSize);
+                    if (bone.Node is not null)
+                        DebugDraw3D.DrawText(bone.Node.GlobalPosition,
+                            $"Space {spaceIndex}\nSkinned Mesh {index}\nBone {bone.BoneIndex}", textSize);
                 }
             }
+
             foreach (var (mesh, index) in space.Meshes.WithIndex())
             {
-                DebugDraw3D.DrawText(mesh.Base.GlobalPosition, $"Space {spaceIndex}\nMesh {index}\n{mesh.Mesh is not null}", textSize);
+                DebugDraw3D.DrawText(mesh.Base.GlobalPosition,
+                    $"Space {spaceIndex}\nMesh {index}\n{mesh.Mesh is not null}", textSize);
             }
         }
     }
