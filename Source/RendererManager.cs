@@ -119,6 +119,11 @@ public partial class RendererManager : Node
         {
             lastFrameIndex = LastFrameIndex,
             inputs = InputManager.Instance.GetInputState(),
+            performance = new PerformanceState
+            {
+                fps = (float)Performance.GetMonitor(Performance.Monitor.TimeFps),
+                //TODO: other performance stats
+            }
         };
         PrimaryMessagingManager.SendCommand(frameStartData);
 
