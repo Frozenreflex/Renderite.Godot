@@ -22,13 +22,20 @@ public partial class RenderSpace : Node3D
     public Vector3 OverridenPosition;
     public Quaternion OverridenRotation;
     public Vector3 OverridenScale;
-    public readonly List<TransformNode> Nodes = new();
-    public readonly List<MeshInstanceManager> Meshes = new();
-    public readonly List<SkinnedMeshInstanceManager> SkinnedMeshes = new();
-    public readonly List<LightInstanceManager> Lights = new();
+    public readonly List<TransformNode> Nodes = [];
+    public readonly SceneInstanceList<MeshInstance> Meshes;
+    public readonly SceneInstanceList<SkinnedMeshInstance> SkinnedMeshes;
+    public readonly SceneInstanceList<LightInstance> Lights;
     private bool _lastPrivate;
     private bool _lastActive;
     public Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
+
+    public RenderSpace()
+    {
+        Meshes = new SceneInstanceList<MeshInstance>(this);
+        SkinnedMeshes = new SceneInstanceList<SkinnedMeshInstance>(this);
+        Lights = new SceneInstanceList<LightInstance>(this);
+    }
 
     public void UpdateOverlayPositioning(Transform3D referenceTransform)
     {
@@ -74,7 +81,7 @@ public partial class RenderSpace : Node3D
             if (!data.reflectionProbeSH2Taks.tasks.IsEmpty)
             {
                 var tasks = SharedMemoryAccessor.Instance.AccessData(data.reflectionProbeSH2Taks.tasks);
-                for (int i = 0; i < tasks.Length; i++)
+                for (var i = 0; i < tasks.Length; i++)
                 {
                     // FrooxEngine hates this one little trick
                     // (it crashes if we don't do anything with this specific task...)
@@ -84,7 +91,8 @@ public partial class RenderSpace : Node3D
             }
         }
     }
-    public void HandleTransformUpdate(TransformsUpdate update)
+
+    private void HandleTransformUpdate(TransformsUpdate update)
     {
         if (!update.removals.IsEmpty)
         {
@@ -134,9 +142,10 @@ public partial class RenderSpace : Node3D
             }
         }
     }
-    public void HandleLightsUpdate(LightRenderablesUpdate update)
+
+    private void HandleLightsUpdate(LightRenderablesUpdate update)
     {
-        HandleSceneInstanceAdditionRemoval(Lights, update);
+        Lights.HandleAdditionRemoval(update);
         if (update.states.IsEmpty) return;
         var states = SharedMemoryAccessor.Instance.AccessData(update.states);
         foreach (var state in states)
@@ -198,9 +207,10 @@ public partial class RenderSpace : Node3D
             }
         }
     }
-    public void HandleSkinnedMeshRenderablesUpdate(SkinnedMeshRenderablesUpdate update)
+
+    private void HandleSkinnedMeshRenderablesUpdate(SkinnedMeshRenderablesUpdate update)
     {
-        HandleSceneInstanceAdditionRemoval(SkinnedMeshes, update);
+        SkinnedMeshes.HandleAdditionRemoval(update);
         HandleMeshRenderablesUpdateBase(update, SkinnedMeshes);
         //TODO: bounds updates
         if (!update.boneAssignments.IsEmpty)
@@ -217,7 +227,7 @@ public partial class RenderSpace : Node3D
                 for (var i = 0; i < bones.Length; i++) bones[i] = boneIndices[boneIndex++];
 
                 if (mesh.TrackedBones is not null) foreach (var bone in mesh.TrackedBones) bone.Cleanup();
-                mesh.TrackedBones = bones.Select((bone, index) => new SkinnedMeshInstanceManager.Bone(Nodes.ElementAtOrDefault(bone), index, mesh)).ToArray();
+                mesh.TrackedBones = bones.Select((bone, index) => new SkinnedMeshInstance.Bone(Nodes.ElementAtOrDefault(bone), index, mesh)).ToArray();
                 mesh.UpdateAllTransforms();
             }
         }
@@ -240,80 +250,49 @@ public partial class RenderSpace : Node3D
             }
         }
     }
-    public void HandleMeshRenderablesUpdate(MeshRenderablesUpdate update)
+
+    private void HandleMeshRenderablesUpdate(MeshRenderablesUpdate update)
     {
-        HandleSceneInstanceAdditionRemoval(Meshes, update);
+        Meshes.HandleAdditionRemoval(update);
         HandleMeshRenderablesUpdateBase(update, Meshes);
     }
-    private void HandleMeshRenderablesUpdateBase<T>(MeshRenderablesUpdate update, List<T> list) where T : MeshInstanceManager
+    private void HandleMeshRenderablesUpdateBase<T>(MeshRenderablesUpdate update, List<T> list) where T : MeshInstance
     {
-        if (!update.meshStates.IsEmpty)
+        if (update.meshStates.IsEmpty) return;
+        var meshStates = SharedMemoryAccessor.Instance.AccessData(update.meshStates);
+        var materials = SharedMemoryAccessor.Instance.AccessData(update.meshMaterialsAndPropertyBlocks);
+        var materialsIndex = 0;
+        foreach (var meshState in meshStates)
         {
-            var meshStates = SharedMemoryAccessor.Instance.AccessData(update.meshStates);
-            var materials = SharedMemoryAccessor.Instance.AccessData(update.meshMaterialsAndPropertyBlocks);
-            var materialsIndex = 0;
-            foreach (var meshState in meshStates)
+            if (meshState.renderableIndex < 0) break;
+            var mesh = list[meshState.renderableIndex];
+            var assetId = meshState.meshAssetId;
+            mesh.Mesh = RendererManager.Instance.AssetManager.GetMesh(assetId);
+            mesh.ShadowCasting = meshState.shadowCastMode.ToGodot();
+            //MotionVectorGenerationMode is ignored, seems unity specific
+            //RenderingServer.InstanceSetPivotData(mesh.InstanceRid, 1e-16f * meshState.sortingOrder, true);
+            //TODO: sorting order
+            //godot has a sorting offset, but this is a float that changes the depth of the fragment
+            if (meshState.materialCount >= 0)
             {
-                if (meshState.renderableIndex < 0) break;
-                var mesh = list[meshState.renderableIndex];
-                var assetId = meshState.meshAssetId;
-                mesh.Mesh = RendererManager.Instance.AssetManager.GetMesh(assetId);
-                mesh.ShadowCasting = meshState.shadowCastMode.ToGodot();
-                //MotionVectorGenerationMode is ignored, seems unity specific
-                //RenderingServer.InstanceSetPivotData(mesh.InstanceRid, 1e-16f * meshState.sortingOrder, true);
-                //TODO: sorting order
-                //godot has a sorting offset, but this is a float that changes the depth of the fragment
-                if (meshState.materialCount >= 0)
+                var matArray = new MaterialInstance[meshState.materialCount];
+                for (var i = 0; i < meshState.materialCount; i++)
                 {
-                    var matArray = new MaterialInstance[meshState.materialCount];
-                    for (var i = 0; i < meshState.materialCount; i++)
+                    var matId = materials[materialsIndex++];
+                    var mat = RendererManager.Instance.AssetManager.MaterialManager.Materials.GetValueOrDefault(matId);
+                    matArray[i] = mat;
+                    //RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
+                }
+                mesh.Materials = matArray;
+                mesh.UpdateMaterials();
+                if (meshState.materialPropertyBlockCount >= 0)
+                {
+                    for (var i = 0; i < meshState.materialPropertyBlockCount; i++)
                     {
                         var matId = materials[materialsIndex++];
-                        var mat = RendererManager.Instance.AssetManager.MaterialManager.Materials.GetValueOrDefault(matId);
-                        matArray[i] = mat;
-                        //RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
-                    }
-                    mesh.Materials = matArray;
-                    mesh.UpdateMaterials();
-                    if (meshState.materialPropertyBlockCount >= 0)
-                    {
-                        for (var i = 0; i < meshState.materialPropertyBlockCount; i++)
-                        {
-                            var matId = materials[materialsIndex++];
-                            //TODO: same thing for property blocks
-                        }
+                        //TODO: same thing for property blocks
                     }
                 }
-            }
-        }
-    }
-    private void HandleSceneInstanceAdditionRemoval<T>(List<T> list, RenderablesUpdate update) where T : SceneInstanceManager, new()
-    {
-        if (!update.removals.IsEmpty)
-        {
-            var removals = SharedMemoryAccessor.Instance.AccessData(update.removals);
-            foreach (var remove in removals)
-            {
-                if (remove < 0) break;
-                if (remove >= list.Count) continue;
-                list[remove].Cleanup();
-                list[remove] = list.Last();
-                list.RemoveAt(list.Count - 1);
-            }
-        }
-        if (!update.additions.IsEmpty)
-        {
-            var additions = SharedMemoryAccessor.Instance.AccessData(update.additions);
-
-            foreach (var addition in additions)
-            {
-                if (addition < 0) break;
-                if (addition >= Nodes.Count) continue;
-                var node = Nodes[addition];
-                if (!IsInstanceValid(node)) throw new Exception();
-                var instance = new T();
-                instance.Initialize(node);
-                list.Add(instance);
             }
         }
     }
