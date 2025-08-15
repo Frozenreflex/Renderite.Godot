@@ -29,6 +29,11 @@ public partial class RendererManager : Node
     private bool _initReceived;
     private bool _initFinalized;
 
+    private readonly FrameStartData _frameStartData = new FrameStartData
+    {
+        performance = new PerformanceState()
+    };
+
     public int LastFrameIndex { get; private set; } = -1;
     private volatile FrameSubmitData _frameData;
 
@@ -74,9 +79,11 @@ public partial class RendererManager : Node
 
         if (!launchResonite)
         {
-            GD.Print($"Resonite auto launch disabled, please run Renderite.Host.dll manually with -shmprefix {_bootstrapper.ShmPrefix}");
+            GD.Print(
+                $"Resonite auto launch disabled, please run Renderite.Host.dll manually with -shmprefix {_bootstrapper.ShmPrefix}");
             return;
         }
+
         var resoniteArgs = args.SkipWhile(arg => arg.ToLower() != "--resoniteargs").Skip(1).ToArray().Join(" ");
         _bootstrapper.LaunchResonite(resonitePath, dotnetExecutable, resoniteArgs);
     }
@@ -112,20 +119,15 @@ public partial class RendererManager : Node
                 GD.Print("Connected!");
                 _bootstrapped = true;
             }
+
             return;
         }
 
-        var frameStartData = new FrameStartData
-        {
-            lastFrameIndex = LastFrameIndex,
-            inputs = InputManager.Instance.GetInputState(),
-            performance = new PerformanceState
-            {
-                fps = (float)Performance.GetMonitor(Performance.Monitor.TimeFps),
-                //TODO: other performance stats
-            }
-        };
-        PrimaryMessagingManager.SendCommand(frameStartData);
+        _frameStartData.lastFrameIndex = LastFrameIndex;
+        _frameStartData.inputs = InputManager.Instance.GetInputState();
+        _frameStartData.performance.fps = (float)Performance.GetMonitor(Performance.Monitor.TimeFps);
+        //TODO: other performance stats
+        PrimaryMessagingManager.SendCommand(_frameStartData);
 
         while (_frameData == null)
         {
