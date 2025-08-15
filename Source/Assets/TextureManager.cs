@@ -103,7 +103,7 @@ public class TextureManager
         {
             var data = slice.RawData[..size];
             image = ImageHelpers.Create(entry.Width, entry.Height, false, entry.Format, data);
-            if (true) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
+            //if (true) image.SavePng($"user://testImage{command.assetId}.{entry.Width}x{entry.Height}.{entry.Format}.png");
         }
         else
         {
