@@ -10,8 +10,9 @@ public partial class InputManager : Node
 {
     public static InputManager Instance;
 
-    private HashSet<Shared.Key> _heldKeys = new();
-    private StringBuilder _typeDelta = new();
+    private readonly StringBuilder _typeDelta = new();
+
+    private List<string> _droppedFiles = [];
 
     private Vector2 _mouseDelta = Vector2.Zero;
     private float _scrollDelta = 0.0f;
@@ -19,10 +20,24 @@ public partial class InputManager : Node
     private bool _lastMouseLocked;
     private Vector2I? _lastLockPosition;
 
+    private readonly InputState _inputState = new InputState
+    {
+        keyboard = new KeyboardState
+        {
+            heldKeys = [],
+        },
+        window = new WindowState(),
+        mouse = new MouseState
+        {
+            isActive = true,
+        },
+    };
+
     public override void _Ready()
     {
         base._Ready();
         Instance = this;
+        GetWindow().FilesDropped += (files => { _droppedFiles.AddRange(files); });
     }
 
     public override void _Input(InputEvent @event)
@@ -30,20 +45,41 @@ public partial class InputManager : Node
         switch (@event)
         {
             case InputEventKey { Pressed: true } keyDown:
-                _heldKeys.Add(keyDown.Keycode.ToRenderite(keyDown.Location));
+                _inputState.keyboard.heldKeys.Add(keyDown.Keycode.ToRenderite(keyDown.Location));
                 if (keyDown.Unicode > 0)
                     _typeDelta.Append((char)keyDown.Unicode);
                 else
                 {
-                    if (keyDown.Keycode == global::Godot.Key.Backspace)
-                        _typeDelta.Append('\b');
-                    else if (keyDown.Keycode == global::Godot.Key.Enter)
-                        _typeDelta.Append('\n');
+                    switch (keyDown.Keycode)
+                    {
+                        case global::Godot.Key.Backspace:
+                            _typeDelta.Append('\b');
+                            break;
+                        case global::Godot.Key.Enter:
+                            _typeDelta.Append('\n');
+                            break;
+                    }
                 }
+
+                // TODO: remove when clipboard is added on linux
+                if (!OS.HasFeature("windows") && keyDown.Keycode == global::Godot.Key.V &&
+                    Input.IsKeyPressed(global::Godot.Key.Ctrl) &&
+                    DisplayServer.ClipboardHas())
+                {
+                    var text = DisplayServer.ClipboardGet();
+                    if (Input.MouseMode != Input.MouseModeEnum.Captured)
+                    {
+                        _typeDelta.Remove(_typeDelta.Length - 1, 1);
+                        _typeDelta.Append(text);
+                    }
+                    else
+                        _droppedFiles.Add(text);
+                }
+
                 break;
 
             case InputEventKey keyUp:
-                _heldKeys.Remove(keyUp.Keycode.ToRenderite(keyUp.Location));
+                _inputState.keyboard.heldKeys.Remove(keyUp.Keycode.ToRenderite(keyUp.Location));
                 break;
 
             case InputEventMouseMotion motion:
@@ -64,45 +100,41 @@ public partial class InputManager : Node
 
     public InputState GetInputState()
     {
-        var typeDelta = _typeDelta.ToString();
-        _typeDelta.Clear();
-
-        var mouseDelta = _mouseDelta;
-        _mouseDelta = Vector2.Zero;
         var mouseScreenPosition = GetViewport().GetMousePosition() * GetViewport().GetScreenTransform();
-
-        var scrollDelta = _scrollDelta;
-        _scrollDelta = 0.0f;
-
-        return new InputState
+        foreach (var file in _droppedFiles)
         {
-            keyboard = new KeyboardState
+            GD.Print($"FILE: {file}");
+        }
+
+        _inputState.keyboard.typeDelta = _typeDelta.ToString();
+
+        _inputState.window.isWindowFocused = GetWindow().HasFocus();
+        _inputState.window.windowResolution = GetWindow().Size.ToRenderite();
+        _inputState.window.dragAndDropEvent = _droppedFiles.Count != 0
+            ? new DragAndDropEvent
             {
-                heldKeys = _heldKeys,
-                typeDelta = typeDelta,
-            },
-            window = new WindowState
-            {
-                isWindowFocused = GetWindow().HasFocus(),
-                windowResolution = GetWindow().Size.ToRenderite(),
-                resolutionSettingsApplied = true,
-                // TODO: drag and drop
-            },
-            mouse = new MouseState
-            {
-                isActive = true,
-                directDelta = mouseDelta.ToRenderite(),
-                desktopPosition = mouseScreenPosition.ToRenderite(),
-                windowPosition = mouseScreenPosition.ToRenderite(),
-                scrollWheelDelta = new RenderVector2(0.0f, scrollDelta * 10.0f), // arbitrary factor, it just felt WAY too slow
-                leftButtonState = Input.IsMouseButtonPressed(MouseButton.Left),
-                rightButtonState = Input.IsMouseButtonPressed(MouseButton.Right),
-                middleButtonState = Input.IsMouseButtonPressed(MouseButton.Middle),
-                button4State = Input.IsMouseButtonPressed(MouseButton.Xbutton1),
-                button5State = Input.IsMouseButtonPressed(MouseButton.Xbutton2)
-            },
-            vr = HeadOutputManager.Instance.GetVRInputState()
-        };
+                paths = _droppedFiles,
+                dropPoint = new RenderVector2i() // NOTE: don't bother with this, it isn't actually used for anything 
+            }
+            : null;
+
+        _inputState.mouse.directDelta = _mouseDelta.ToRenderite();
+        _inputState.mouse.desktopPosition = Vector2.Zero.ToRenderite();
+        _inputState.mouse.windowPosition = mouseScreenPosition.ToRenderite();
+        _inputState.mouse.scrollWheelDelta =
+            new RenderVector2(0.0f, _scrollDelta * 15.0f); // arbitrary factor, it just felt WAY too slow
+        _inputState.mouse.leftButtonState = Input.IsMouseButtonPressed(MouseButton.Left);
+        _inputState.mouse.rightButtonState = Input.IsMouseButtonPressed(MouseButton.Right);
+        _inputState.mouse.middleButtonState = Input.IsMouseButtonPressed(MouseButton.Middle);
+        _inputState.mouse.button4State = Input.IsMouseButtonPressed(MouseButton.Xbutton1);
+        _inputState.mouse.button5State = Input.IsMouseButtonPressed(MouseButton.Xbutton2);
+        _inputState.vr = HeadOutputManager.Instance.GetVRInputState();
+
+        _typeDelta.Clear();
+        _mouseDelta = Vector2.Zero;
+        _scrollDelta = 0.0f;
+        _droppedFiles = [];
+        return _inputState;
     }
 
     public void Handle(OutputState state)
@@ -126,8 +158,8 @@ public partial class InputManager : Node
         if (state.lockCursor)
         {
             Input.MouseMode = newLockPos.HasValue
-            ? Input.MouseModeEnum.ConfinedHidden
-            : Input.MouseModeEnum.Captured;
+                ? Input.MouseModeEnum.ConfinedHidden
+                : Input.MouseModeEnum.Captured;
         }
         else
         {
