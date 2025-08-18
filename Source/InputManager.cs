@@ -101,10 +101,6 @@ public partial class InputManager : Node
     public InputState GetInputState()
     {
         var mouseScreenPosition = GetViewport().GetMousePosition() * GetViewport().GetScreenTransform();
-        foreach (var file in _droppedFiles)
-        {
-            GD.Print($"FILE: {file}");
-        }
 
         _inputState.keyboard.typeDelta = _typeDelta.ToString();
 
