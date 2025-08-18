@@ -319,7 +319,16 @@ public class MaterialManager
                     }
                     case MaterialPropertyUpdateType.SetTexture:
                     {
-                        materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.Texture2Ds.GetValueOrDefault(reader.ReadInt()));
+                        IdPacker<TextureAssetType>.Unpack(reader.ReadInt(), out var assetId, out var type);
+                        switch (type)
+                        {
+                            case TextureAssetType.Texture2D:
+                                materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.Texture2Ds.GetValueOrDefault(assetId));
+                                break;
+                            case TextureAssetType.RenderTexture:
+                                materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.RenderTextures.GetValueOrDefault(assetId));
+                                break;
+                        }
                         break;
                     }
                 }

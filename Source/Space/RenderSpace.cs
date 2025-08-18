@@ -26,6 +26,7 @@ public partial class RenderSpace : Node3D
     public readonly SceneInstanceList<MeshInstance> Meshes;
     public readonly SceneInstanceList<SkinnedMeshInstance> SkinnedMeshes;
     public readonly SceneInstanceList<LightInstance> Lights;
+    public readonly SceneInstanceList<CameraInstance> Cameras;
     private bool _lastPrivate;
     private bool _lastActive;
     public Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
@@ -35,6 +36,7 @@ public partial class RenderSpace : Node3D
         Meshes = new SceneInstanceList<MeshInstance>(this);
         SkinnedMeshes = new SceneInstanceList<SkinnedMeshInstance>(this);
         Lights = new SceneInstanceList<LightInstance>(this);
+        Cameras = new SceneInstanceList<CameraInstance>(this);
     }
 
     public void UpdateOverlayPositioning(Transform3D referenceTransform)
@@ -76,6 +78,7 @@ public partial class RenderSpace : Node3D
         if (data.meshRenderersUpdate is not null) HandleMeshRenderablesUpdate(data.meshRenderersUpdate);
         if (data.skinnedMeshRenderersUpdate is not null) HandleSkinnedMeshRenderablesUpdate(data.skinnedMeshRenderersUpdate);
         if (data.lightsUpdate is not null) HandleLightsUpdate(data.lightsUpdate);
+        if (data.camerasUpdate is not null) HandleCamerasUpdate(data.camerasUpdate);
         if (data.reflectionProbeSH2Taks is not null)
         {
             if (!data.reflectionProbeSH2Taks.tasks.IsEmpty)
@@ -205,6 +208,19 @@ public partial class RenderSpace : Node3D
                         break;
                     }
             }
+        }
+    }
+
+    private void HandleCamerasUpdate(CameraRenderablesUpdate update)
+    {
+        Cameras.HandleAdditionRemoval(update);
+        if (update.states.IsEmpty) return;
+        var states = SharedMemoryAccessor.Instance.AccessData(update.states);
+        foreach (var state in states)
+        {
+            if (state.renderableIndex < 0) break;
+            var camera = Cameras[state.renderableIndex];
+            camera.UpdateState(state);
         }
     }
 
