@@ -184,7 +184,7 @@ public partial class RendererManager : Node
             InputManager.Instance.Handle(submitData.outputState);
     }
 
-    private void HandleRenderCommand(RendererCommand command)
+    private void HandleRenderCommand(RendererCommand command, int size)
     {
         if (command is KeepAlive) return;
 
