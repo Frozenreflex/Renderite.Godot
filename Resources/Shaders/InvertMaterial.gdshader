@@ -19,7 +19,7 @@ void vertex() {
 }
 
 void fragment() {
+	DoRectClip(_Rect);
 	vec3 color = texture(ScreenTexture, SCREEN_UV).rgb;
 	ALBEDO = mix(color, 1.0 - color, _Lerp);
-	DoRectClip(rect);
 }
