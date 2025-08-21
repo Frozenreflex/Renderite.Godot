@@ -27,6 +27,7 @@ public partial class RenderSpace : Node3D
     public readonly SceneInstanceList<SkinnedMeshInstance> SkinnedMeshes;
     public readonly SceneInstanceList<LightInstance> Lights;
     public readonly SceneInstanceList<CameraInstance> Cameras;
+    public readonly SceneInstanceList<LayerInstance> Layers;
     private bool _lastPrivate;
     private bool _lastActive;
     public Transform3D RootTransform => TransformHelpers.TransformFromTRS(RootPosition, RootRotation, RootScale);
@@ -37,6 +38,7 @@ public partial class RenderSpace : Node3D
         SkinnedMeshes = new SceneInstanceList<SkinnedMeshInstance>(this);
         Lights = new SceneInstanceList<LightInstance>(this);
         Cameras = new SceneInstanceList<CameraInstance>(this);
+        Layers = new SceneInstanceList<LayerInstance>(this);
     }
 
     public void UpdateOverlayPositioning(Transform3D referenceTransform)
@@ -76,9 +78,11 @@ public partial class RenderSpace : Node3D
 
         if (data.transformsUpdate is not null) HandleTransformUpdate(data.transformsUpdate);
         if (data.meshRenderersUpdate is not null) HandleMeshRenderablesUpdate(data.meshRenderersUpdate);
-        if (data.skinnedMeshRenderersUpdate is not null) HandleSkinnedMeshRenderablesUpdate(data.skinnedMeshRenderersUpdate);
+        if (data.skinnedMeshRenderersUpdate is not null)
+            HandleSkinnedMeshRenderablesUpdate(data.skinnedMeshRenderersUpdate);
         if (data.lightsUpdate is not null) HandleLightsUpdate(data.lightsUpdate);
         if (data.camerasUpdate is not null) HandleCamerasUpdate(data.camerasUpdate);
+        if (data.layersUpdate is not null) HandleLayersUpdate(data.layersUpdate);
         if (data.reflectionProbeSH2Taks is not null)
         {
             if (!data.reflectionProbeSH2Taks.tasks.IsEmpty)
@@ -111,12 +115,14 @@ public partial class RenderSpace : Node3D
                 Nodes.RemoveAt(Nodes.Count - 1);
             }
         }
+
         while (Nodes.Count < update.targetTransformCount)
         {
             var node = new TransformNode();
             AddChild(node);
             Nodes.Add(node);
         }
+
         if (!update.parentUpdates.IsEmpty)
         {
             var parentUpdates = SharedMemoryAccessor.Instance.AccessData(update.parentUpdates);
@@ -131,9 +137,10 @@ public partial class RenderSpace : Node3D
                     parent.RemoveChild(node);
                 Nodes[parentUpdate.newParentId].AddChild(node);
                 node.InvokeParentChanged();
+                node.SetLayer(Nodes[parentUpdate.newParentId].Layer);
             }
-            //
         }
+
         if (!update.poseUpdates.IsEmpty)
         {
             var poseUpdates = SharedMemoryAccessor.Instance.AccessData(update.poseUpdates);
@@ -171,42 +178,46 @@ public partial class RenderSpace : Node3D
                 light.LightRid = newRid;
                 light.InstanceValid = true;
             }
+
             var lightRid = light.LightRid;
             //TODO: check for accuracy, some light settings don't exist in godot
             RenderingServer.LightSetColor(lightRid, state.color.ToGodotColor());
             RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Energy, state.intensity);
             RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Range, state.range);
             RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.ShadowBias, state.shadowBias);
-            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.ShadowNormalBias, state.shadowNormalBias);
-            RenderingServer.LightSetShadow(lightRid, state.shadowType != ShadowType.None); //hard and soft aren't distinguished between here
+            RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.ShadowNormalBias,
+                state.shadowNormalBias);
+            RenderingServer.LightSetShadow(lightRid,
+                state.shadowType != ShadowType.None); //hard and soft aren't distinguished between here
             //constants copied from here https://github.com/V-Sekai/unidot_importer/blob/main/object_adapter.gd#L5869
             //TODO: light cookies for lights other than spot, how do they work?
             switch (type)
             {
                 case RenderingServer.LightType.Directional:
-                    {
-                        break;
-                    }
+                {
+                    break;
+                }
                 case RenderingServer.LightType.Omni:
-                    {
-                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 1f);
-                        break;
-                    }
+                {
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 1f);
+                    break;
+                }
                 case RenderingServer.LightType.Spot:
+                {
+                    //TODO
+                    /*
+                    if (light.AssetIndex != state.cookieTextureAssetId)
                     {
-                        //TODO
-                        /*
-                        if (light.AssetIndex != state.cookieTextureAssetId)
-                        {
-                            light.AssetIndex = state.cookieTextureAssetId;
-                            RenderingServer.LightSetProjector(lightRid, cookieRid);
-                        }
-                        */
-                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 0.5f);
-                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAttenuation, 0.333333333f);
-                        RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAngle, state.spotAngle * 0.5f);
-                        break;
+                        light.AssetIndex = state.cookieTextureAssetId;
+                        RenderingServer.LightSetProjector(lightRid, cookieRid);
                     }
+                    */
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.Attenuation, 0.5f);
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAttenuation, 0.333333333f);
+                    RenderingServer.LightSetParam(lightRid, RenderingServer.LightParam.SpotAngle,
+                        state.spotAngle * 0.5f);
+                    break;
+                }
             }
         }
     }
@@ -221,6 +232,18 @@ public partial class RenderSpace : Node3D
             if (state.renderableIndex < 0) break;
             var camera = Cameras[state.renderableIndex];
             camera.UpdateState(state);
+        }
+    }
+
+    public void HandleLayersUpdate(LayerUpdate update)
+    {
+        var start = Layers.Count;
+        Layers.HandleAdditionRemoval(update);
+        if (update.layerAssignments.IsEmpty) return;
+        var layers = SharedMemoryAccessor.Instance.AccessData(update.layerAssignments);
+        for (var i = 0; i < layers.Length; i++)
+        {
+            Layers[start + i].SetLayer(layers[i]);
         }
     }
 
@@ -242,11 +265,15 @@ public partial class RenderSpace : Node3D
                 var bones = new int[boneAssignment.boneCount];
                 for (var i = 0; i < bones.Length; i++) bones[i] = boneIndices[boneIndex++];
 
-                if (mesh.TrackedBones is not null) foreach (var bone in mesh.TrackedBones) bone.Cleanup();
-                mesh.TrackedBones = bones.Select((bone, index) => new SkinnedMeshInstance.Bone(Nodes.ElementAtOrDefault(bone), index, mesh)).ToArray();
+                if (mesh.TrackedBones is not null)
+                    foreach (var bone in mesh.TrackedBones)
+                        bone.Cleanup();
+                mesh.TrackedBones = bones.Select((bone, index) =>
+                    new SkinnedMeshInstance.Bone(Nodes.ElementAtOrDefault(bone), index, mesh)).ToArray();
                 mesh.UpdateAllTransforms();
             }
         }
+
         if (!update.blendshapeUpdateBatches.IsEmpty)
         {
             var blendshapeUpdateBatches = SharedMemoryAccessor.Instance.AccessData(update.blendshapeUpdateBatches);
@@ -262,6 +289,7 @@ public partial class RenderSpace : Node3D
                     mesh.BlendShapeValues[blend.blendshapeIndex] = blend.weight;
                     //if (mesh.Mesh.BlendShapeCount > blend.blendshapeIndex) RenderingServer.InstanceSetBlendShapeWeight(mesh.InstanceRid, blend.blendshapeIndex, blend.weight);
                 }
+
                 mesh.UpdateBlendShapes();
             }
         }
@@ -272,6 +300,7 @@ public partial class RenderSpace : Node3D
         Meshes.HandleAdditionRemoval(update);
         HandleMeshRenderablesUpdateBase(update, Meshes);
     }
+
     private void HandleMeshRenderablesUpdateBase<T>(MeshRenderablesUpdate update, List<T> list) where T : MeshInstance
     {
         if (update.meshStates.IsEmpty) return;
@@ -299,6 +328,7 @@ public partial class RenderSpace : Node3D
                     matArray[i] = mat;
                     //RenderingServer.InstanceSetSurfaceOverrideMaterial(mesh.InstanceRid, i, mat?.MaterialRid ?? new Rid());
                 }
+
                 mesh.Materials = matArray;
                 mesh.UpdateMaterials();
                 if (meshState.materialPropertyBlockCount >= 0)

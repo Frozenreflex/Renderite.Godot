@@ -13,6 +13,7 @@ public class SceneInstance
     public TransformNode Base { get; private set; }
     public Rid InstanceRid { get; private set; }
     public bool Initialized { get; private set; }
+
     public bool InstanceValid
     {
         get;
@@ -24,10 +25,6 @@ public class SceneInstance
         }
     }
 
-    public SceneInstance(TransformNode b) => Initialize(b);
-    public SceneInstance()
-    {
-    }
     public void Initialize(TransformNode b)
     {
         if (Initialized) return;
@@ -36,22 +33,34 @@ public class SceneInstance
         RenderingServer.InstanceSetScenario(InstanceRid, Main.Scenario);
         Base.GlobalTransformChanged += BaseOnGlobalTransformChanged;
         Base.VisibilityChanged += OnVisibilityChanged;
+        Base.LayerChanged += OnLayerChanged;
         OnInitialize();
         Initialized = true;
     }
+
     protected virtual void OnInitialize()
     {
-        
+        OnLayerChanged(Base);
     }
+
     protected virtual void OnVisibilityChanged()
     {
         if (InstanceValid) RenderingServer.InstanceSetVisible(InstanceRid, Base.IsVisibleInTree());
     }
 
-    private void UpdateTransform()
-    { 
-        RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
+    protected virtual void OnLayerChanged(TransformNode obj)
+    {
+        var isHidden = obj.Layer is LayerType.Hidden;
+        if (InstanceValid)
+            RenderingServer.InstanceSetLayerMask(InstanceRid, isHidden ? 2u : 1u);
     }
+
+    private void UpdateTransform()
+    {
+        RenderingServer.InstanceSetTransform(InstanceRid, Base.GlobalTransform);
+        OnLayerChanged(Base);
+    }
+
     protected virtual void BaseOnGlobalTransformChanged(TransformNode obj) => UpdateTransform();
 
     public virtual void Cleanup()
@@ -69,8 +78,6 @@ public class SceneInstance
 public class SceneInstanceList<T>(RenderSpace renderSpace) : List<T>
     where T : SceneInstance, new()
 {
-    private readonly RenderSpace _renderSpace = renderSpace;
-
     public void HandleAdditionRemoval(RenderablesUpdate update)
     {
         if (!update.removals.IsEmpty)
@@ -79,12 +86,13 @@ public class SceneInstanceList<T>(RenderSpace renderSpace) : List<T>
             foreach (var remove in removals)
             {
                 if (remove < 0) break;
-                if (remove >= this.Count) continue;
+                if (remove >= Count) continue;
                 this[remove].Cleanup();
                 this[remove] = this.Last();
-                this.RemoveAt(this.Count - 1);
+                RemoveAt(Count - 1);
             }
         }
+
         if (!update.additions.IsEmpty)
         {
             var additions = SharedMemoryAccessor.Instance.AccessData(update.additions);
@@ -92,12 +100,12 @@ public class SceneInstanceList<T>(RenderSpace renderSpace) : List<T>
             foreach (var addition in additions)
             {
                 if (addition < 0) break;
-                if (addition >= _renderSpace.Nodes.Count) continue;
-                var node = _renderSpace.Nodes[addition];
+                if (addition >= renderSpace.Nodes.Count) continue;
+                var node = renderSpace.Nodes[addition];
                 if (!GodotObject.IsInstanceValid(node)) throw new Exception();
                 var instance = new T();
                 instance.Initialize(node);
-                this.Add(instance);
+                Add(instance);
             }
         }
     }

@@ -25,7 +25,10 @@ public partial class HeadOutputManager : Node3D
         Instance = this;
 
         _viewport = GetViewport();
-        _camera = new Camera3D();
+        _camera = new Camera3D
+        {
+            CullMask = 1
+        };
         AddChild(_camera);
 
         IsXR = XRServer.PrimaryInterface is not null;
@@ -35,7 +38,10 @@ public partial class HeadOutputManager : Node3D
             _xrOrigin = new XROrigin3D();
             AddChild(_xrOrigin);
 
-            _xrCamera = new XRCamera3D();
+            _xrCamera = new XRCamera3D
+            {
+                CullMask = 1
+            };
             _xrOrigin.AddChild(_xrCamera);
 
             _controllers.Add(new XRController3D
@@ -53,17 +59,14 @@ public partial class HeadOutputManager : Node3D
         }
     }
 
-    public override void _Process(double delta)
-    {
-        base._Process(delta);
-    }
-
     public void Handle(FrameSubmitData submitData, RenderSpace renderSpace)
     {
         var rotateY = new Quaternion(Vector3.Up, Mathf.Pi);
-        Transform = TransformHelpers.TransformFromTRS(renderSpace.RootPosition, renderSpace.RootRotation * rotateY, renderSpace.RootScale);
+        Transform = TransformHelpers.TransformFromTRS(renderSpace.RootPosition, renderSpace.RootRotation * rotateY,
+            renderSpace.RootScale);
         if (renderSpace.OverridePosition)
-            Transform = TransformHelpers.TransformFromTRS(renderSpace.OverridenPosition, renderSpace.OverridenRotation * rotateY, renderSpace.OverridenScale);
+            Transform = TransformHelpers.TransformFromTRS(renderSpace.OverridenPosition,
+                renderSpace.OverridenRotation * rotateY, renderSpace.OverridenScale);
         _camera.Near = submitData.nearClip;
         _camera.Far = submitData.farClip;
         _camera.Fov = submitData.desktopFOV;
@@ -78,6 +81,11 @@ public partial class HeadOutputManager : Node3D
             _xrCamera.Current = vrActive;
             _camera.Current = !vrActive;
         }
+    }
+
+    public Transform3D GetCameraTransform()
+    {
+        return _viewport.UseXR ? _xrCamera.GlobalTransform : _camera.GlobalTransform;
     }
 
     public VR_InputsState GetVRInputState()
@@ -98,29 +106,33 @@ public partial class HeadOutputManager : Node3D
             },
             // TODO: Make a huge ass map of all the controller types and buttons, and handle skeletons, and multiple devices, and trackers... (I told you it's gonna be tedious)
             controllers = _controllers.Select(controller =>
-                    (VR_ControllerState)new IndexControllerState
-                    {
-                        side = controller.GetTrackerHand() == XRPositionalTracker.TrackerHand.Left ? Chirality.Left : Chirality.Right,
-                        isDeviceActive = true,
-                        isTracking = true,
-                        position = controller.Position.ToRenderiteZflip(),
-                        rotation = controller.Quaternion.ToRenderiteZflip(),
-                        deviceID = controller.Name,
-                        deviceModel = "knuckles",
-                        hasBoundHand = true,
-                        handPosition = controller.Position.ToRenderiteZflip(),
-                        handRotation = controller.Quaternion.ToRenderiteZflip(),
-                        trigger = controller.GetFloat("trigger"),
-                        triggerClick = controller.IsButtonPressed("trigger_click"),
-                        grip = controller.GetFloat("grip"),
-                        gripClick = controller.IsButtonPressed("grip_click"),
-                        joystickRaw = controller.GetVector2("primary").ToRenderite()
-                    }).ToList(),
+                (VR_ControllerState)new IndexControllerState
+                {
+                    side = controller.GetTrackerHand() == XRPositionalTracker.TrackerHand.Left
+                        ? Chirality.Left
+                        : Chirality.Right,
+                    isDeviceActive = true,
+                    isTracking = true,
+                    position = controller.Position.ToRenderiteZflip(),
+                    rotation = controller.Quaternion.ToRenderiteZflip(),
+                    deviceID = controller.Name,
+                    deviceModel = "knuckles",
+                    hasBoundHand = true,
+                    handPosition = controller.Position.ToRenderiteZflip(),
+                    handRotation = controller.Quaternion.ToRenderiteZflip(),
+                    trigger = controller.GetFloat("trigger"),
+                    triggerClick = controller.IsButtonPressed("trigger_click"),
+                    grip = controller.GetFloat("grip"),
+                    gripClick = controller.IsButtonPressed("grip_click"),
+                    joystickRaw = controller.GetVector2("primary").ToRenderite(),
+                }).ToList(),
             hands = _controllers.Select(controller =>
                 new HandState
                 {
                     uniqueId = controller.Name + "_hand",
-                    chirality = controller.GetTrackerHand() == XRPositionalTracker.TrackerHand.Left ? Chirality.Left : Chirality.Right,
+                    chirality = controller.GetTrackerHand() == XRPositionalTracker.TrackerHand.Left
+                        ? Chirality.Left
+                        : Chirality.Right,
                     isDeviceActive = true,
                     isTracking = true,
                     tracksMetacarpals = false,

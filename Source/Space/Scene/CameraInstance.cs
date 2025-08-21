@@ -56,7 +56,7 @@ public class CameraInstance : SceneInstance
         _camera.Fov = state.fieldOfView;
         _camera.HOffset = state.viewport.x;
         _camera.VOffset = state.viewport.y; // TODO: width height? I think we need something custom for this...
-        _camera.CullMask = state is { renderPrivateUI: true, selectiveRenderCount: > 0 }
+        _camera.CullMask = state.selectiveRenderCount > 0
             ? 2u
             : 1u; // TODO: actually implement this, this is to get the dash working for now
         viewport.RenderTargetClearMode = state.clearMode switch
