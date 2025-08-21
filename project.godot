@@ -35,6 +35,10 @@ project/assembly_name="Renderite.Godot"
 
 run/main_run_args="--resoniteargs -LoadAssembly Libraries/ResoniteModLoader.dll -DoNotAutoLaunchHome -SkipIntroTutorial"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gde_gozen/plugin.cfg")
+
 [gui]
 
 theme/default_font_multichannel_signed_distance_field=true

@@ -161,6 +161,34 @@ public class AssetManager
                 }).CallDeferred();
                 break;
             }
+            case VideoTextureLoad videoTextureLoad:
+                Callable.From(() =>
+                {
+                    TextureManager.Handle(videoTextureLoad);
+                    PackerMemoryPool.Instance.Return(videoTextureLoad);
+                }).CallDeferred();
+                break;
+            case VideoTextureProperties videoTextureProperties:
+                Callable.From(() =>
+                {
+                    TextureManager.Handle(videoTextureProperties);
+                    PackerMemoryPool.Instance.Return(videoTextureProperties);
+                }).CallDeferred();
+                break;
+            case VideoTextureUpdate videoTextureUpdate:
+                Callable.From(() =>
+                {
+                    TextureManager.Handle(videoTextureUpdate);
+                    PackerMemoryPool.Instance.Return(videoTextureUpdate);
+                }).CallDeferred();
+                break;
+            case UnloadVideoTexture unloadVideoTexture:
+                Callable.From(() =>
+                {
+                    TextureManager.Handle(unloadVideoTexture);
+                    PackerMemoryPool.Instance.Return(unloadVideoTexture);
+                }).CallDeferred();
+                break;
         }
     }
 }

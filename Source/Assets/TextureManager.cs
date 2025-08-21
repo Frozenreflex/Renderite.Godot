@@ -54,6 +54,7 @@ public class TextureManager
 {
     public Dictionary<int, TextureEntry> Texture2Ds = new();
     public Dictionary<int, RenderTextureEntry> RenderTextures = new();
+    public Dictionary<int, VideoTextureEntry> VideoTextures = new();
 
     private TextureEntry GetOrCreate(int index)
     {
@@ -78,6 +79,14 @@ public class TextureManager
             Rid = viewport.GetTexture().GetRid(),
         };
         RenderTextures[index] = entry;
+        return entry;
+    }
+
+    public VideoTextureEntry GetOrCreateVideoTexture(int index)
+    {
+        if (VideoTextures.TryGetValue(index, out var entry)) return entry;
+        entry = new VideoTextureEntry();
+        VideoTextures[index] = entry;
         return entry;
     }
 
@@ -154,14 +163,14 @@ public class TextureManager
         RenderingServer.FreeRid(value.Rid);
         Texture2Ds.Remove(command.assetId);
     }
-    
+
     public void Handle(SetRenderTextureFormat command)
     {
         var entry = GetOrCreateRenderTexture(command.assetId);
         entry.Width = command.size.x;
         entry.Height = command.size.y;
         entry.Flags = EnumHelpers.Convert(command.filterMode, command.wrapU, command.wrapV);
-        
+
         entry.Viewport.Size = command.size.ToGodot();
         entry.InvokeFlagsChanged();
 
@@ -172,12 +181,36 @@ public class TextureManager
         });
         entry.Instantiated = true;
     }
-    
+
     public void Handle(UnloadRenderTexture command)
     {
         if (!RenderTextures.TryGetValue(command.assetId, out var value)) return;
         Main.Instance.RemoveChild(value.Viewport);
         value.Viewport.QueueFree();
         RenderTextures.Remove(command.assetId);
+    }
+
+    public void Handle(VideoTextureProperties command)
+    {
+        var entry = GetOrCreateVideoTexture(command.assetId);
+        entry.Flags = EnumHelpers.Convert(command.filterMode, command.wrapU, command.wrapV);
+        entry.InvokeFlagsChanged();
+    }
+
+    public void Handle(VideoTextureLoad command)
+    {
+        GetOrCreateVideoTexture(command.assetId).Handle(command);
+    }
+
+    public void Handle(VideoTextureUpdate command)
+    {
+        GetOrCreateVideoTexture(command.assetId).Handle(command);
+    }
+
+    public void Handle(UnloadVideoTexture command)
+    {
+        if (!VideoTextures.TryGetValue(command.assetId, out var value)) return;
+        value.Cleanup();
+        VideoTextures.Remove(command.assetId);
     }
 }

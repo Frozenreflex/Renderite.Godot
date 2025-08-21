@@ -328,6 +328,9 @@ public class MaterialManager
                             case TextureAssetType.RenderTexture:
                                 materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.RenderTextures.GetValueOrDefault(assetId));
                                 break;
+                            case TextureAssetType.VideoTexture:
+                                materialTarget.SetTexture(propertyId, RendererManager.Instance.AssetManager.TextureManager.VideoTextures.GetValueOrDefault(assetId));
+                                break;
                         }
                         break;
                     }
