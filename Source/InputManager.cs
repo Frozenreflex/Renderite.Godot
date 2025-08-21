@@ -61,21 +61,6 @@ public partial class InputManager : Node
                     }
                 }
 
-                // TODO: remove when clipboard is added on linux
-                if (!OS.HasFeature("windows") && keyDown.Keycode == global::Godot.Key.V &&
-                    Input.IsKeyPressed(global::Godot.Key.Ctrl) &&
-                    DisplayServer.ClipboardHas())
-                {
-                    var text = DisplayServer.ClipboardGet();
-                    if (Input.MouseMode != Input.MouseModeEnum.Captured)
-                    {
-                        _typeDelta.Remove(_typeDelta.Length - 1, 1);
-                        _typeDelta.Append(text);
-                    }
-                    else
-                        _droppedFiles.Add(text);
-                }
-
                 break;
 
             case InputEventKey keyUp:

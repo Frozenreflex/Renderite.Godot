@@ -22,7 +22,7 @@ public class Bootstrapper
     public Bootstrapper(Action onExit)
     {
         _onExit = onExit;
-        
+
         const string safeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var rnd = new Random();
         ShmPrefix = new string(Enumerable.Range(0, 16)
@@ -91,6 +91,44 @@ public class Bootstrapper
         queueCapacity = long.Parse(queueArgs[3]);
 
         _bootstrapperOut.TryEnqueue(Encoding.UTF8.GetBytes("RENDERITE_STARTED:" + Environment.ProcessId));
+        StartClipboardHandlerThread();
         return true;
+    }
+
+    private void StartClipboardHandlerThread()
+    {
+        new Thread(() =>
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!_bootstrapperIn.TryDequeue(CancellationToken.None, out var result))
+                    {
+                        Thread.Sleep(10);
+                        continue;
+                    }
+
+                    var cmd = Encoding.UTF8.GetString(result.Span);
+                    if (cmd == "GETTEXT")
+                    {
+                        var text = DisplayServer.ClipboardHas() ? DisplayServer.ClipboardGet() : "";
+                        _bootstrapperOut.TryEnqueue(Encoding.UTF8.GetBytes(text));
+                    }
+                    else if (cmd.StartsWith("SETTEXT "))
+                    {
+                        DisplayServer.ClipboardSet(cmd.Substring("SETTEXT ".Length));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    GD.PrintErr($"Clipboard handler exception: {ex.Message}");
+                }
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "ClipboardHandlerThread"
+        }.Start();
     }
 }
