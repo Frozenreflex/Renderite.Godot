@@ -148,6 +148,18 @@ public partial class RendererManager : Node
     private void HandleFrameUpdate(FrameSubmitData submitData)
     {
         LastFrameIndex = submitData.frameIndex;
+
+        foreach (var id in Spaces.Keys)
+        {
+            if (submitData.renderSpaces.Any(s => s.id == id))
+                continue;
+
+            var spaceToRemove = Spaces[id];
+            spaceToRemove.Visible = false;
+            spaceToRemove.QueueFree();
+            Spaces.Remove(id);
+        }
+
         RenderSpace activeRenderSpace = null;
         RenderSpace activeOverlayRenderSpace = null;
         foreach (var spaceData in submitData.renderSpaces)
