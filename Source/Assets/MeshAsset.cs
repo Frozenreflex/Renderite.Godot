@@ -27,6 +27,7 @@ public class MeshAsset
         };
         return asset;
     }
+
     public void Cleanup()
     {
         if (AssetID != new Rid()) RenderingServer.FreeRid(AssetID);
@@ -49,13 +50,18 @@ public class MeshAsset
                 goto end;
             }
 
+            var span = meshBuffer.GetRawVertexBufferData();
+            BinaryReader vertReader;
+            unsafe
+            {
+                fixed (byte* ptr = span)
+                    vertReader = new BinaryReader(new UnmanagedMemoryStream(ptr, span.Length));
+            }
 
-            var vertexMem = new MemoryStream(meshBuffer.GetRawVertexBufferData().ToArray());
-            var vertReader = new BinaryReader(vertexMem);
             var vertCount = meshUploadData.vertexCount;
             var boneWeightCount = meshUploadData.boneWeightCount;
             var boneCount = meshUploadData.boneCount;
-            
+
             //ignore the upload hint, it's a dirty liar
             var usesPosition = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Position);
             var usesNormal = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.Normal);
@@ -74,7 +80,7 @@ public class MeshAsset
             var weightsPerVertex = usesBones && vertCount > 0 ? boneWeightCount / vertCount : 0;
             //var usesBoneWeights = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneWeights);
             //var usesBoneIndices = meshUploadData.vertexAttributes.Any(i => i.attribute is VertexAttributeType.BoneIndicies);
-            
+
             //GD.Print($"vertCount {vertCount} boneWeightCount {boneWeightCount} boneCount {boneCount}");
             //GD.Print($"---\npos: {usesPosition} normal: {usesNormal} tangent: {usesTangent} color: {usesColor}\nuv0: {usesUV0} uv1: {usesUV1} uv2: {usesUV2} uv3: {usesUV3} uv4: {usesUV4} uv5: {usesUV5} uv6: {usesUV6} uv7 {usesUV7}\nweights: {usesBoneWeights} indices: {usesBoneIndices}");
 
@@ -114,15 +120,18 @@ public class MeshAsset
                     {
                         if (format is VertexAttributeFormat.Float32)
                         {
-                            vertexActions.Add(() => positionList.Add(new Vector3(-vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                            vertexActions.Add(() => positionList.Add(new Vector3(-vertReader.ReadSingle(),
+                                vertReader.ReadSingle(), vertReader.ReadSingle())));
                             used = sizeof(float) * 3;
                         }
                         else if (format is VertexAttributeFormat.Half16)
                         {
-                            vertexActions.Add(() => positionList.Add(new Vector3(-(float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                            vertexActions.Add(() => positionList.Add(new Vector3(-(float)vertReader.ReadHalf(),
+                                (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                             used = 2 * 3; //sizeof(Half) * 3
                         }
                         else vertexActions.Add(() => positionList.Add(Vector3.Zero));
+
                         break;
                     }
                     case VertexAttributeType.Normal:
@@ -132,17 +141,20 @@ public class MeshAsset
                         {
                             if (format is VertexAttributeFormat.Float32)
                             {
-                                vertexActions.Add(() => normalList.Add(new Vector3(-vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                                vertexActions.Add(() => normalList.Add(new Vector3(-vertReader.ReadSingle(),
+                                    vertReader.ReadSingle(), vertReader.ReadSingle())));
                                 used = sizeof(float) * 3;
                             }
                             else if (format is VertexAttributeFormat.Half16)
                             {
-                                vertexActions.Add(() => normalList.Add(new Vector3(-(float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                                vertexActions.Add(() => normalList.Add(new Vector3(-(float)vertReader.ReadHalf(),
+                                    (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                                 used = 2 * 3; //sizeof(Half) * 3
                             }
                             else vertexActions.Add(() => normalList.Add(Vector3.Zero));
                         }
                         else vertexActions.Add(() => normalList.Add(Vector3.Zero));
+
                         break;
                     }
                     case VertexAttributeType.Tangent:
@@ -152,24 +164,30 @@ public class MeshAsset
                         {
                             if (format is VertexAttributeFormat.Float32)
                             {
-                                vertexActions.Add(() => tangentList.Add(new Vector4(vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                                vertexActions.Add(() => tangentList.Add(new Vector4(vertReader.ReadSingle(),
+                                    vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
                                 used = sizeof(float) * 4;
                             }
                             else if (format is VertexAttributeFormat.Half16)
                             {
                                 vertexActions.Add(() =>
-                                    tangentList.Add(new Vector4((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                                    tangentList.Add(new Vector4((float)vertReader.ReadHalf(),
+                                        (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(),
+                                        (float)vertReader.ReadHalf())));
                                 used = 2 * 4; //sizeof(Half) * 4
                             }
                             else if (format is VertexAttributeFormat.UNorm8)
                             {
-                                float Read() => Mathf.Remap(vertReader.ReadByte(), byte.MinValue, byte.MaxValue, -1f, 1f);
+                                float Read() => Mathf.Remap(vertReader.ReadByte(), byte.MinValue, byte.MaxValue, -1f,
+                                    1f);
+
                                 vertexActions.Add(() => tangentList.Add(new Vector4(Read(), Read(), Read(), Read())));
                                 used = 4;
                             }
                             else vertexActions.Add(() => tangentList.Add(Vector4.Zero));
                         }
                         else vertexActions.Add(() => tangentList.Add(Vector4.Zero));
+
                         break;
                     }
                     case VertexAttributeType.Color:
@@ -178,23 +196,27 @@ public class MeshAsset
                         {
                             if (format is VertexAttributeFormat.Float32)
                             {
-                                vertexActions.Add(() => colorList.Add(new Color(vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
+                                vertexActions.Add(() => colorList.Add(new Color(vertReader.ReadSingle(),
+                                    vertReader.ReadSingle(), vertReader.ReadSingle(), vertReader.ReadSingle())));
                                 used = sizeof(float) * 4;
                             }
                             else if (format is VertexAttributeFormat.Half16)
                             {
                                 vertexActions.Add(() =>
-                                    colorList.Add(new Color((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                                    colorList.Add(new Color((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf(),
+                                        (float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                                 used = 2 * 4; //sizeof(Half) * 4
                             }
                             else if (format is VertexAttributeFormat.UNorm8)
                             {
-                                vertexActions.Add(() => colorList.Add(Color.Color8(vertReader.ReadByte(), vertReader.ReadByte(), vertReader.ReadByte(), vertReader.ReadByte())));
+                                vertexActions.Add(() => colorList.Add(Color.Color8(vertReader.ReadByte(),
+                                    vertReader.ReadByte(), vertReader.ReadByte(), vertReader.ReadByte())));
                                 used = 4;
                             }
                             else vertexActions.Add(() => colorList.Add(Colors.White));
                         }
                         else vertexActions.Add(() => colorList.Add(Colors.White));
+
                         break;
                     }
                     case VertexAttributeType.UV0:
@@ -212,29 +234,36 @@ public class MeshAsset
                         {
                             if (format is VertexAttributeFormat.Float32)
                             {
-                                vertexActions.Add(() => list.Add(new Vector2(vertReader.ReadSingle(), vertReader.ReadSingle())));
+                                vertexActions.Add(() =>
+                                    list.Add(new Vector2(vertReader.ReadSingle(), vertReader.ReadSingle())));
                                 used = sizeof(float) * 2;
                             }
                             else if (format is VertexAttributeFormat.Half16)
                             {
-                                vertexActions.Add(() => list.Add(new Vector2((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
+                                vertexActions.Add(() =>
+                                    list.Add(new Vector2((float)vertReader.ReadHalf(), (float)vertReader.ReadHalf())));
                                 used = 2 * 2; //sizeof(Half) * 2
                             }
                             else if (format is VertexAttributeFormat.UNorm8)
                             {
-                                float Read() => Mathf.Remap(vertReader.ReadByte(), byte.MinValue, byte.MaxValue, 0f, 1f);
+                                float Read() =>
+                                    Mathf.Remap(vertReader.ReadByte(), byte.MinValue, byte.MaxValue, 0f, 1f);
+
                                 vertexActions.Add(() => list.Add(new Vector2(Read(), Read())));
                                 used = 2;
                             }
                             else if (format is VertexAttributeFormat.UNorm16)
                             {
-                                float Read() => Mathf.Remap(vertReader.ReadUInt16(), ushort.MinValue, ushort.MaxValue, 0f, 1f);
+                                float Read() => Mathf.Remap(vertReader.ReadUInt16(), ushort.MinValue, ushort.MaxValue,
+                                    0f, 1f);
+
                                 vertexActions.Add(() => list.Add(new Vector2(Read(), Read())));
                                 used = sizeof(ushort) * 2;
                             }
                             else vertexActions.Add(() => list.Add(Vector2.Zero));
                         }
                         else vertexActions.Add(() => list.Add(Vector2.Zero));
+
                         break;
                     }
                     /*
@@ -321,7 +350,9 @@ public class MeshAsset
                     }
                     */
                 }
-                if (used > size) throw new Exception($"Used bytes are larger than actual size. Used: {used} Size: {size}");
+
+                if (used > size)
+                    throw new Exception($"Used bytes are larger than actual size. Used: {used} Size: {size}");
                 if (used < size)
                 {
                     //if we don't use up the entirety of the size of the attribute, we need to account for it here
@@ -359,7 +390,6 @@ public class MeshAsset
             }
 
             vertReader.Dispose();
-            vertexMem.Dispose();
 
             int[] indexBuffer;
             if (meshBuffer.IndexBufferFormat is IndexBufferFormat.UInt16)
@@ -384,7 +414,9 @@ public class MeshAsset
             {
                 foreach (var submesh in meshBuffer.Submeshes)
                 {
-                    indexList.Add(submesh.indexCount > 0 ? indexBuffer.Skip(submesh.indexStart).Take(submesh.indexCount).ToArray() : [0, 0, 0]);
+                    indexList.Add(submesh.indexCount > 0
+                        ? indexBuffer.Skip(submesh.indexStart).Take(submesh.indexCount).ToArray()
+                        : [0, 0, 0]);
                     typeList.Add(submesh.topology.ToGodot());
                 }
             }
@@ -393,37 +425,44 @@ public class MeshAsset
             baseArray.Resize((int)Mesh.ArrayType.Max);
 
             var form = RenderingServer.ArrayFormat.FlagFormatCurrentVersion;
-            
+
             if (usesPosition)
             {
                 form |= RenderingServer.ArrayFormat.FormatVertex;
                 baseArray[(int)Mesh.ArrayType.Vertex] = positionList.ToArray();
             }
+
             if (usesNormal)
             {
                 form |= RenderingServer.ArrayFormat.FormatNormal;
                 baseArray[(int)Mesh.ArrayType.Normal] = normalList.ToArray();
             }
+
             if (usesTangent)
             {
                 form |= RenderingServer.ArrayFormat.FormatTangent;
-                baseArray[(int)Mesh.ArrayType.Tangent] = tangentList.SelectMany(i => new[] { i.X, i.Y, i.Z, i.W }).ToArray();
+                baseArray[(int)Mesh.ArrayType.Tangent] =
+                    tangentList.SelectMany(i => new[] { i.X, i.Y, i.Z, i.W }).ToArray();
             }
+
             if (usesColor)
             {
                 form |= RenderingServer.ArrayFormat.FormatColor;
                 baseArray[(int)Mesh.ArrayType.Color] = colorList.ToArray();
             }
+
             if (usesUV0)
             {
                 form |= RenderingServer.ArrayFormat.FormatTexUV;
                 baseArray[(int)Mesh.ArrayType.TexUV] = uv0List.ToArray();
             }
+
             if (usesUV1)
             {
                 form |= RenderingServer.ArrayFormat.FormatTexUV2;
                 baseArray[(int)Mesh.ArrayType.TexUV2] = uv1List.ToArray();
             }
+
             //TODO: custom channels for other UVs
             if (usesBones)
             {
@@ -442,13 +481,13 @@ public class MeshAsset
                 var type = typeList[i];
                 RenderingServer.MeshAddSurfaceFromArrays(AssetID, type, arr, null, null, form);
             }
-            
+
             end:
 
             var bindPoses = meshBuffer.GetBindPosesBuffer<RenderMatrix4x4>();
             Skin = new Transform3D[bindPoses.Length];
             for (var i = 0; i < bindPoses.Length; i++) Skin[i] = bindPoses[i].ToGodot();
-            
+
             RenderingServer.MeshSetCustomAabb(AssetID, meshUploadData.bounds.ToGodot());
 
             MeshChanged.Invoke();
