@@ -2,7 +2,7 @@
 
 A work-in-progress alternative rendering frontend for Resonite.
 
-[Uses Godot 4.5 Beta 5 .NET](https://godotengine.org/article/dev-snapshot-godot-4-5-beta-5/)
+[Uses Godot 4.5 .NET](https://godotengine.org/releases/4.5/)
 
 [Requires a ResoniteModloader mod to fix shaders](https://github.com/Frozenreflex/Renderite.Godot.Patches)
 
