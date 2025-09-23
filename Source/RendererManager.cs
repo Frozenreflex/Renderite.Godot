@@ -226,6 +226,9 @@ public partial class RendererManager : Node
                 case FrameSubmitData submitData:
                     _frameData = submitData;
                     break;
+                case FreeSharedMemoryView freeSharedMemoryView:
+                    SharedMemory.ReleaseView(freeSharedMemoryView.bufferId);
+                    break;
                 default:
                     AssetManager.HandleRenderCommand(command);
                     break;
