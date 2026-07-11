@@ -1,6 +1,6 @@
-<Project Sdk="Godot.NET.Sdk/4.5.0">
+<Project Sdk="Godot.NET.Sdk/4.7.0">
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>preview</LangVersion>
@@ -8,7 +8,8 @@
         <RenderitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\Renderer\</RenderitePath>
         <RenderitePath Condition="Exists('$(HOME)/.local/share/Steam/steamapps/common/Resonite/Renderer/')">$(HOME)/.local/share/Steam/steamapps/common/Resonite/Renderer/</RenderitePath>
         <RenderitePath Condition="Exists('/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/')">/mnt/LocalDisk2/SteamLibrary/steamapps/common/Resonite/Renderer/</RenderitePath>
-	    <RenderitePath Condition="Exists('G:\SteamLibrary\steamapps\common\Resonite\Renderer\')">G:\SteamLibrary\steamapps\common\Resonite\Renderer\</RenderitePath>
+        <RenderitePath Condition="Exists('G:\SteamLibrary\steamapps\common\Resonite\Renderer\')">G:\SteamLibrary\steamapps\common\Resonite\Renderer\</RenderitePath>
+        <RenderitePath Condition="Exists('/media/linux_data/Steam/steamapps/common/Resonite/Renderer/')">/media/linux_data/Steam/steamapps/common/Resonite/Renderer/</RenderitePath>
     </PropertyGroup>
 
     <ItemGroup>

@@ -45,7 +45,7 @@ public class Bootstrapper
         var startInfo = new ProcessStartInfo
         {
             FileName = dotnetExecutable,
-            Arguments = $"{dllPath} -shmprefix {ShmPrefix} {resoniteArgs}",
+            Arguments = $"{dllPath} -shmprefix {ShmPrefix} {resoniteArgs} -renderer {Process.GetCurrentProcess().ProcessName}",
             WorkingDirectory = resonitePath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -86,7 +86,7 @@ public class Bootstrapper
         queueCapacity = 0;
 
         if (!_bootstrapperIn.TryDequeue(CancellationToken.None, out var result)) return false;
-        var queueArgs = Encoding.UTF8.GetString(result.Span).Split(' ');
+        var queueArgs = Encoding.UTF8.GetString(result.Span).Split("ARGS=")[1].Split(' ');
         queueName = queueArgs[1];
         queueCapacity = long.Parse(queueArgs[3]);
 
